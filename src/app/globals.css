@@ -1,26 +1,143 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Design tokens.
+ *
+ * Warm neutrals rather than pure white/black — this is a cookbook, and a
+ * clinical grey UI fights the subject matter. One accent (paprika), used
+ * sparingly for active state and primary actions.
+ *
+ * Every token is defined here in the light block first, then overridden for
+ * dark, so no colour has its only definition inside a media query.
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  /* Surfaces */
+  --background: #faf8f5; /* warm paper */
+  --surface: #ffffff; /* cards, raised panels */
+  --surface-muted: #f2eee8; /* sidebar, secondary fills */
+
+  /* Text */
+  --foreground: #1f1b16; /* warm near-black */
+  --muted: #6b6156; /* secondary text */
+  --subtle: #9a9086; /* tertiary, timestamps */
+
+  /* Lines */
+  --border: #e5ded4;
+  --border-strong: #d3c9bc;
+
+  /* Accent */
+  --accent: #b5451f; /* paprika */
+  --accent-hover: #9a3a19;
+  --accent-fg: #ffffff;
+  --accent-muted: #f6e7e0; /* accent-tinted fill */
+
+  /* Status — used by stock, mastery, and image states */
+  --success: #3f6b4a;
+  --success-muted: #e4ede6;
+  --warning: #9a6b1f;
+  --warning-muted: #f6eddc;
+  --danger: #a33a30;
+  --danger-muted: #f6e3e1;
+
+  /* Layout */
+  --nav-height: 3.5rem;
+  --sidebar-width: 20rem;
+  --tap-target: 2.75rem; /* 44px minimum */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #171310;
+    --surface: #211c18;
+    --surface-muted: #1b1713;
+
+    --foreground: #f2ece4;
+    --muted: #a89c8f;
+    --subtle: #7d7266;
+
+    --border: #332b24;
+    --border-strong: #473d34;
+
+    --accent: #e2703f;
+    --accent-hover: #ee8354;
+    --accent-fg: #1a1512;
+    --accent-muted: #33211a;
+
+    --success: #7fb08c;
+    --success-muted: #1e2a21;
+    --warning: #d4a45c;
+    --warning-muted: #2b2317;
+    --danger: #e08076;
+    --danger-muted: #2e1d1b;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-muted: var(--accent-muted);
+
+  --color-success: var(--success);
+  --color-success-muted: var(--success-muted);
+  --color-warning: var(--warning);
+  --color-warning-muted: var(--warning-muted);
+  --color-danger: var(--danger);
+  --color-danger-muted: var(--danger-muted);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces);
+
+  --spacing-nav: var(--nav-height);
+  --spacing-sidebar: var(--sidebar-width);
+  --spacing-tap: var(--tap-target);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Recipe titles and page headings carry the display face. */
+.font-display {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+/* Visible focus for keyboard users, suppressed for mouse clicks. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Horizontal scrollers (mobile nav, chip rows) shouldn't show a scrollbar. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
