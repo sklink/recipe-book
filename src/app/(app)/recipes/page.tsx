@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Link2, Plus } from "lucide-react";
 
 import { RecipeList } from "@/app/(app)/recipes/recipe-list";
 import { FilterChips, type Chip } from "@/components/filter-chips";
@@ -108,6 +108,13 @@ export default async function RecipesPage({
             : "Everything in the cookbook."
         }
       >
+        <Link
+          href="/recipes/import"
+          className="border-border-strong hover:bg-surface-muted min-h-tap flex items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors"
+        >
+          <Link2 size={15} strokeWidth={2} aria-hidden />
+          Import
+        </Link>
         <Link
           href="/recipes/new"
           className="border-border-strong hover:bg-surface-muted min-h-tap flex items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors"
