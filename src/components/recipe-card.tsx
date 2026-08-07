@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Clock, GitBranch } from "lucide-react";
 
+import { MasteryBadge } from "@/components/mastery-badge";
 import { RecipeImage } from "@/components/recipe-image";
 import { formatMinutes } from "@/lib/recipes/time-buckets";
 import type { RecipeSummary } from "@/lib/recipes/types";
@@ -54,7 +55,8 @@ export function RecipeCard({
           ) : null}
 
           {/* Pushed to the bottom so cards of differing text length still align. */}
-          <div className="mt-auto pt-2">
+          <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
+            <MasteryBadge mastery={recipe.mastery} />
             {recipe.missingCount > 0 ? (
               <span className="bg-warning-muted text-warning inline-flex rounded-full px-2 py-1 text-xs">
                 {recipe.missingCount} missing

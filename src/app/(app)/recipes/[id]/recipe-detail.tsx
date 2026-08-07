@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Clock, GitBranch, Users } from "lucide-react";
+import { ArrowLeft, ChefHat, Clock, GitBranch, Users } from "lucide-react";
 
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { NewVariantButton } from "@/components/new-variant-button";
 import { RecipeImage } from "@/components/recipe-image";
+import { useState } from "react";
+
+import { CookMode } from "@/app/(app)/recipes/[id]/cook-mode";
+import { MasteryBadge } from "@/components/mastery-badge";
 import { useRecipe } from "@/lib/recipes/hooks";
+import { OUTCOME_LABELS } from "@/lib/recipes/mastery";
 import { formatMinutes } from "@/lib/recipes/time-buckets";
 import type { RecipeIngredient } from "@/lib/recipes/types";
 
@@ -52,6 +57,7 @@ function IngredientRow({ ingredient }: { ingredient: RecipeIngredient }) {
 
 export function RecipeDetailView({ id }: { id: string }) {
   const { data: recipe, isPending, isError, error } = useRecipe(id);
+  const [cooking, setCooking] = useState(false);
 
   if (isPending) {
     return (
@@ -118,8 +124,28 @@ export function RecipeDetailView({ id }: { id: string }) {
             </span>
           ) : null}
           <span>{recipe.mealTypes.map((m) => MEAL_LABELS[m] ?? m).join(" · ")}</span>
+          <MasteryBadge mastery={recipe.mastery} showUntried />
         </div>
+
+        <button
+          type="button"
+          onClick={() => setCooking(true)}
+          className="bg-accent text-accent-fg hover:bg-accent-hover min-h-tap flex w-fit items-center gap-2 rounded-lg px-5 text-sm font-medium transition-colors"
+        >
+          <ChefHat size={16} strokeWidth={2} aria-hidden />
+          Cook this
+        </button>
       </header>
+
+      {cooking ? (
+        <CookMode
+          recipeId={recipe.id}
+          title={recipe.title}
+          steps={recipe.instructions}
+          ingredients={recipe.ingredients}
+          onClose={() => setCooking(false)}
+        />
+      ) : null}
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -158,6 +184,32 @@ export function RecipeDetailView({ id }: { id: string }) {
           ))}
         </ol>
       </section>
+
+      {recipe.cookLogs.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-display text-xl font-semibold">
+            Cooked {recipe.cookLogs.length} time{recipe.cookLogs.length === 1 ? "" : "s"}
+          </h2>
+          <ul data-testid="cook-log" className="flex flex-col">
+            {recipe.cookLogs.map((log) => (
+              <li
+                key={log.id}
+                className="border-border flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b py-2 last:border-b-0"
+              >
+                <span className="text-muted w-28 shrink-0 text-sm tabular-nums">
+                  {new Date(log.cookedAt).toLocaleDateString(undefined, {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+                <span className="text-sm font-medium">{OUTCOME_LABELS[log.outcome]}</span>
+                {log.notes ? <span className="text-subtle text-sm">{log.notes}</span> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {recipe.variants.length > 0 ? (
         <section className="flex flex-col gap-3">

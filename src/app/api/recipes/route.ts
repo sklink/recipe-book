@@ -29,12 +29,14 @@ export async function GET(request: NextRequest) {
   const mealType = params.get("mealType");
   const timeBucket = params.get("timeBucket");
   const search = params.get("search")?.trim();
+  const mastery = params.get("mastery");
 
   try {
     const result = await listRecipes({
       mealType: isMealType(mealType) ? mealType : undefined,
       timeBucket: isTimeBucket(timeBucket) ? timeBucket : undefined,
       requireIngredients: params.get("requireIngredients") === "true",
+      masteryGroup: mastery === "known" || mastery === "new" ? mastery : undefined,
       includeVariants: params.get("includeVariants") === "true",
       search: search || undefined,
     });

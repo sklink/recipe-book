@@ -1,6 +1,7 @@
 import { RecipeList } from "@/app/(app)/recipes/recipe-list";
 import { FilterChips, type Chip } from "@/components/filter-chips";
 import { PageHeader } from "@/components/page-header";
+import { MasteryFilter } from "@/components/mastery-filter";
 import { RequireIngredientsToggle } from "@/components/require-ingredients-toggle";
 import { MEAL_LABELS, isMealType } from "@/lib/recipes/meal-types";
 import { BUCKET_LABELS, isTimeBucket } from "@/lib/recipes/time-buckets";
@@ -18,6 +19,7 @@ export default async function RecipesPage({
     timeBucket?: string;
     search?: string;
     requireIngredients?: string;
+    mastery?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -26,12 +28,23 @@ export default async function RecipesPage({
   const timeBucket = isTimeBucket(params.timeBucket) ? params.timeBucket : undefined;
   const search = params.search?.trim() || undefined;
   const requireIngredients = params.requireIngredients === "true";
+  const masteryGroup =
+    params.mastery === "known" || params.mastery === "new" ? params.mastery : undefined;
 
-  const filters: RecipeFilters = { mealType, timeBucket, search, requireIngredients };
+  const filters: RecipeFilters = {
+    mealType,
+    timeBucket,
+    search,
+    requireIngredients,
+    masteryGroup,
+  };
 
   const buildHref = (
     overrides: Partial<
-      Record<"mealType" | "timeBucket" | "search" | "requireIngredients", string | undefined>
+      Record<
+        "mealType" | "timeBucket" | "search" | "requireIngredients" | "mastery",
+        string | undefined
+      >
     >,
   ) => {
     const next = new URLSearchParams();
@@ -40,6 +53,7 @@ export default async function RecipesPage({
       timeBucket,
       search,
       requireIngredients: requireIngredients ? "true" : undefined,
+      mastery: masteryGroup,
       ...overrides,
     };
     for (const [key, value] of Object.entries(values)) {
@@ -71,6 +85,13 @@ export default async function RecipesPage({
       removeHref: buildHref({ search: undefined }),
     });
   }
+  if (masteryGroup) {
+    chips.push({
+      key: "mastery",
+      label: masteryGroup === "known" ? "Know it" : "New to me",
+      removeHref: buildHref({ mastery: undefined }),
+    });
+  }
 
   const filtered = chips.length > 0;
 
@@ -86,10 +107,18 @@ export default async function RecipesPage({
       />
 
       <div className="flex flex-col gap-3 pb-5">
-        <RequireIngredientsToggle
-          enabled={requireIngredients}
-          href={buildHref({ requireIngredients: requireIngredients ? undefined : "true" })}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <RequireIngredientsToggle
+            enabled={requireIngredients}
+            href={buildHref({ requireIngredients: requireIngredients ? undefined : "true" })}
+          />
+          {/*
+           * Mastery lives here rather than as a fourth flow step: it's something
+           * you reach for on the results screen, not a question worth asking
+           * before you've seen anything.
+           */}
+          <MasteryFilter current={masteryGroup} buildHref={buildHref} />
+        </div>
         {filtered ? (
           <FilterChips
             chips={chips}

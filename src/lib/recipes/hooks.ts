@@ -22,6 +22,7 @@ function toSearchParams(filters: RecipeFilters): string {
   if (filters.requireIngredients) params.set("requireIngredients", "true");
   if (filters.includeVariants) params.set("includeVariants", "true");
   if (filters.search) params.set("search", filters.search);
+  if (filters.masteryGroup) params.set("mastery", filters.masteryGroup);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }

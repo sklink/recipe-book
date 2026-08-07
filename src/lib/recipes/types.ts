@@ -1,5 +1,6 @@
-import type { ImageStatus, MealType, RecipeSource } from "@/lib/supabase/types";
+import type { CookOutcome, ImageStatus, MealType, RecipeSource } from "@/lib/supabase/types";
 import type { TimeBucket } from "@/lib/recipes/time-buckets";
+import type { MasteryState } from "@/lib/recipes/mastery";
 
 /** One ordered instruction step, as stored in recipes.instructions. */
 export type InstructionStep = { step: number; text: string };
@@ -40,6 +41,8 @@ export type RecipeSummary = {
    * ids only, resolved against the ingredients query the sidebar already holds.
    */
   ingredientIds: string[];
+  /** Derived from cook_logs on read — see lib/recipes/mastery.ts. */
+  mastery: MasteryState;
 };
 
 export type RecipeDetail = RecipeSummary & {
@@ -48,10 +51,13 @@ export type RecipeDetail = RecipeSummary & {
   variantNote: string | null;
   sourceUrl: string | null;
   variants: RecipeSummary[];
+  cookLogs: { id: string; cookedAt: string; outcome: CookOutcome; notes: string | null }[];
 };
 
 export type RecipeFilters = {
   mealType?: MealType;
+  /** "known" = reliable and above, "new" = untried or attempted. */
+  masteryGroup?: "known" | "new";
   timeBucket?: TimeBucket;
   /** Only recipes whose non-optional, non-staple ingredients are all in stock. */
   requireIngredients?: boolean;
