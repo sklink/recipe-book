@@ -6,15 +6,16 @@ A cookbook that answers "what should I cook right now?" based on meal type, time
 
 ## Progress
 
-| Ticket               | Status            | Notes                                                                                                                           |
-| -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| T1 Scaffold + deploy | **Done**          | Next.js 16 / React 19 / Tailwind 4 / TS 5, Prettier, live on Vercel with push-to-deploy                                         |
-| T2 Supabase schema   | **Code complete** | Migration + typed clients written and validated against local Postgres 15. Needs a Supabase project to `db:push` against.       |
-| T3 Auth              | **Code complete** | Magic link + single-address allowlist + route gating, redirect behaviour verified. Needs a real project to exercise end to end. |
-| T4 App shell         | **Done**          | Tokens, nav, shell, five stub routes. Verified at 375/768/1440 with Playwright.                                                 |
-| T5 Seed data         | Next              | Needs a live Supabase project.                                                                                                  |
+| Ticket               | Status            | Notes                                                                                                        |
+| -------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| T1 Scaffold + deploy | **Done**          | Next.js 16 / React 19 / Tailwind 4 / TS 5, Prettier, live on Vercel with push-to-deploy                      |
+| T2 Supabase schema   | **Done**          | 7 tables live; constraints, triggers and RLS verified against the real project.                              |
+| T3 Auth              | **Code complete** | Gating verified. End-to-end magic link untested — needs a sign-in. Public signups still enabled in Supabase. |
+| T4 App shell         | **Done**          | Tokens, nav, shell, five stub routes. Verified at 375/768/1440 with Playwright.                              |
+| T5 Seed data         | **Done**          | 23 recipes, 108 ingredients, 31 aliases live. `npm run seed` (`-- --force` to replace).                      |
+| T6 Recipes API       | Next              |                                                                                                              |
 
-Everything from T6 onward is unstarted.
+Everything from T7 onward is unstarted.
 
 `npm run layout:check` measures overflow, nav, sidebar visibility and tap-target
 size across the three breakpoints — run it against a dev server after UI tickets.
