@@ -68,7 +68,7 @@ function buildPrompt(title: string, description: string | null): string {
  */
 export async function generateRecipeImage(
   recipeId: string,
-): Promise<{ ok: boolean; url?: string }> {
+): Promise<{ ok: boolean; url?: string; reason?: string }> {
   const supabase = await createClient();
 
   const { data: recipe } = await supabase
@@ -77,12 +77,12 @@ export async function generateRecipeImage(
     .eq("id", recipeId)
     .maybeSingle();
 
-  if (!recipe) return { ok: false };
+  if (!recipe) return { ok: false, reason: "Recipe not found." };
 
   const generator = getImageGenerator();
   if (!generator) {
     console.warn("[images] No OPENAI_API_KEY configured — leaving the placeholder in place.");
-    return { ok: false };
+    return { ok: false, reason: "No image provider is configured." };
   }
 
   const started = Date.now();
@@ -103,7 +103,16 @@ export async function generateRecipeImage(
       .from(BUCKET)
       .upload(path, bytes, { contentType: "image/webp", upsert: true });
 
-    if (uploadError) throw new Error(`Storing image: ${uploadError.message}`);
+    if (uploadError) {
+      // The most likely cause by far, and the message alone doesn't say so.
+      const isRls = /row-level security/i.test(uploadError.message);
+      throw new Error(
+        isRls
+          ? "Storing image: the recipe-images bucket has no write policy. Apply " +
+              "supabase/migrations/20260807140000_storage_policies.sql."
+          : `Storing image: ${uploadError.message}`,
+      );
+    }
 
     const {
       data: { publicUrl },
@@ -136,6 +145,6 @@ export async function generateRecipeImage(
       error: message,
     });
 
-    return { ok: false };
+    return { ok: false, reason: message };
   }
 }

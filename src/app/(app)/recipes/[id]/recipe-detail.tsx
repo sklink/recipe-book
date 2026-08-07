@@ -6,6 +6,7 @@ import { ArrowLeft, ChefHat, Clock, GitBranch, Pencil, Users } from "lucide-reac
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { NewVariantButton } from "@/components/new-variant-button";
 import { RecipeImage } from "@/components/recipe-image";
+import { RetryImageButton } from "@/components/retry-image-button";
 import { useState } from "react";
 
 import { CookMode } from "@/app/(app)/recipes/[id]/cook-mode";
@@ -143,6 +144,7 @@ export function RecipeDetailView({ id }: { id: string }) {
             <Pencil size={15} strokeWidth={2} aria-hidden />
             Edit
           </Link>
+          <RetryImageButton recipeId={recipe.id} imageStatus={recipe.imageStatus} />
         </div>
       </header>
 
