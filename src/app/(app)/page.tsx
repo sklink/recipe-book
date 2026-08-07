@@ -28,7 +28,7 @@ export default async function Home() {
         </Link>
       </div>
 
-      <p className="text-subtle mt-8 text-xs">Signed in as {user?.email}</p>
+      {user?.email ? <p className="text-subtle mt-8 text-xs">Signed in as {user.email}</p> : null}
     </>
   );
 }
