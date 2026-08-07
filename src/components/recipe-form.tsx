@@ -43,7 +43,15 @@ function move<T>(list: T[], from: number, to: number): T[] {
   return next;
 }
 
-const inputClass = "border-border bg-surface min-h-tap w-full rounded-lg border px-3 text-sm";
+/**
+ * No width here on purpose. Tailwind emits `w-full` after `w-20`, so a caller
+ * appending a narrower width to a base class that already says `w-full` loses
+ * — same specificity, later rule wins. Width is the caller's job.
+ */
+const inputClass = "border-border bg-surface min-h-tap rounded-lg border px-3 text-sm";
+const fieldClass = `${inputClass} w-full`;
+/** Inside a flex row: min-w-0 lets it shrink instead of forcing the row wider. */
+const flexFieldClass = `${inputClass} min-w-0 flex-1`;
 
 /**
  * One form for both editing and creating.
@@ -106,7 +114,7 @@ export function RecipeForm({
             value={values.title}
             onChange={(e) => set("title", e.target.value)}
             required
-            className={inputClass}
+            className={fieldClass}
           />
         </div>
 
@@ -168,7 +176,7 @@ export function RecipeForm({
               value={values.timeMinutes}
               onChange={(e) => set("timeMinutes", e.target.value)}
               required
-              className={inputClass}
+              className={fieldClass}
             />
           </div>
           <div className="flex flex-1 flex-col gap-1.5">
@@ -182,7 +190,7 @@ export function RecipeForm({
               min={1}
               value={values.servings}
               onChange={(e) => set("servings", e.target.value)}
-              className={inputClass}
+              className={fieldClass}
             />
           </div>
         </div>
@@ -207,7 +215,8 @@ export function RecipeForm({
                   value={ingredient.unit}
                   onChange={(e) => setIngredient(index, { unit: e.target.value })}
                   placeholder="g"
-                  className={`${inputClass} w-20 shrink-0`}
+                  // Wider than the amount: units run to "cloves", "to taste", "few sprigs".
+                  className={`${inputClass} w-24 shrink-0`}
                 />
                 <input
                   aria-label={`Name for ingredient ${index + 1}`}
@@ -215,7 +224,7 @@ export function RecipeForm({
                   value={ingredient.name}
                   onChange={(e) => setIngredient(index, { name: e.target.value })}
                   placeholder="ingredient"
-                  className={inputClass}
+                  className={flexFieldClass}
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -224,7 +233,7 @@ export function RecipeForm({
                   value={ingredient.prepNote}
                   onChange={(e) => setIngredient(index, { prepNote: e.target.value })}
                   placeholder="finely chopped"
-                  className={inputClass}
+                  className={flexFieldClass}
                 />
                 <label className="text-muted min-h-tap flex shrink-0 items-center gap-1.5 px-1 text-xs">
                   <input
@@ -284,7 +293,7 @@ export function RecipeForm({
                   )
                 }
                 rows={2}
-                className="border-border bg-surface flex-1 rounded-lg border px-3 py-2 text-sm"
+                className="border-border bg-surface min-w-0 flex-1 rounded-lg border px-3 py-2 text-sm"
               />
               {/* Reorder buttons rather than drag: reliable on touch, and keyboard-operable. */}
               <div className="flex shrink-0 flex-col">
