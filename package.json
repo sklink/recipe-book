@@ -15,7 +15,8 @@
     "layout:check": "node scripts/layout-check.mjs",
     "seed": "node scripts/seed.mjs",
     "test:normalise": "node scripts/normalise-check.mjs",
-    "test:mastery": "node scripts/mastery-check.mjs"
+    "test:mastery": "node scripts/mastery-check.mjs",
+    "check:secrets": "node scripts/secret-leak-check.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
