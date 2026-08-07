@@ -16,7 +16,7 @@ A cookbook that answers "what should I cook right now?" based on meal type, time
 | T6 Recipes API       | **Done** | Filters, near-miss fallback, persisted cache. 26 assertions against live data.                                            |
 | T7 Recipe cards      | Next     |                                                                                                                           |
 
-Everything from T10 onward is unstarted.
+Everything from T12 onward is unstarted.
 
 `npm run layout:check` measures overflow, nav, sidebar visibility and tap-target
 size across the three breakpoints — run it against a dev server after UI tickets.
