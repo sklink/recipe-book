@@ -89,8 +89,14 @@ export async function recordGeneration(entry: {
   if (error) noteTableMissing("recording usage", error.message);
 }
 
-/** Claude Opus 5: $5 per MTok in, $25 per MTok out. Returned in tenths of a cent. */
+/**
+ * Claude Opus 5: $5 per MTok in, $25 per MTok out.
+ *
+ * Returned in millicents — thousandths of a cent — so divide by 1000 to display
+ * cents. The earlier version returned tenths of a cent despite the name, which
+ * made every reported cost 100x too low.
+ */
 export function claudeCostMillicents(inputTokens: number, outputTokens: number): number {
   const dollars = (inputTokens / 1_000_000) * 5 + (outputTokens / 1_000_000) * 25;
-  return Math.round(dollars * 1000);
+  return Math.round(dollars * 100_000);
 }

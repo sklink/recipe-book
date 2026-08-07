@@ -32,6 +32,17 @@ const FUZZY_THRESHOLD = 0.55;
 let fuzzyUnavailableWarned = false;
 
 /**
+ * True when `input` names a narrower thing than `candidate` — every word of the
+ * candidate appears in the input, and the input has more words besides.
+ */
+export function isMoreSpecificThan(input: string, candidate: string): boolean {
+  const inputWords = normalise(input).split(" ").filter(Boolean);
+  const candidateWords = normalise(candidate).split(" ").filter(Boolean);
+  if (inputWords.length <= candidateWords.length) return false;
+  return candidateWords.every((word) => inputWords.includes(word));
+}
+
+/**
  * Strips the noise models add: quantities that leaked into the name, trailing
  * prep notes, parentheticals, and simple plurals.
  */
@@ -163,7 +174,14 @@ export async function resolveIngredients(names: string[]): Promise<Resolution[]>
     }
 
     const best = Array.isArray(fuzzy) ? fuzzy[0] : null;
-    if (best?.id) {
+
+    // A longer name that fully contains a shorter one is a *different*
+    // ingredient, not a typo of it: "white wine vinegar" is not "white wine",
+    // "coconut milk" is not "coconut", "spring onion" is not "onion". Trigram
+    // similarity rates these highly, so the guard has to be explicit.
+    const moreSpecific = best?.name ? isMoreSpecificThan(norm || lower, best.name) : false;
+
+    if (best?.id && !moreSpecific) {
       results.push({
         ingredientId: best.id,
         canonicalName: best.name,

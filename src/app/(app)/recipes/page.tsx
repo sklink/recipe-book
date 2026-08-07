@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
 import { RecipeList } from "@/app/(app)/recipes/recipe-list";
 import { FilterChips, type Chip } from "@/components/filter-chips";
 import { PageHeader } from "@/components/page-header";
@@ -104,7 +107,15 @@ export default async function RecipesPage({
             ? "Narrowed by what you picked. Remove a filter to widen the search."
             : "Everything in the cookbook."
         }
-      />
+      >
+        <Link
+          href="/recipes/new"
+          className="border-border-strong hover:bg-surface-muted min-h-tap flex items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors"
+        >
+          <Plus size={15} strokeWidth={2} aria-hidden />
+          New recipe
+        </Link>
+      </PageHeader>
 
       <div className="flex flex-col gap-3 pb-5">
         <div className="flex flex-wrap items-center gap-2">

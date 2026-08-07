@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, ChefHat, Clock, GitBranch, Users } from "lucide-react";
+import { ArrowLeft, ChefHat, Clock, GitBranch, Pencil, Users } from "lucide-react";
 
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { NewVariantButton } from "@/components/new-variant-button";
@@ -127,14 +127,23 @@ export function RecipeDetailView({ id }: { id: string }) {
           <MasteryBadge mastery={recipe.mastery} showUntried />
         </div>
 
-        <button
-          type="button"
-          onClick={() => setCooking(true)}
-          className="bg-accent text-accent-fg hover:bg-accent-hover min-h-tap flex w-fit items-center gap-2 rounded-lg px-5 text-sm font-medium transition-colors"
-        >
-          <ChefHat size={16} strokeWidth={2} aria-hidden />
-          Cook this
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setCooking(true)}
+            className="bg-accent text-accent-fg hover:bg-accent-hover min-h-tap flex w-fit items-center gap-2 rounded-lg px-5 text-sm font-medium transition-colors"
+          >
+            <ChefHat size={16} strokeWidth={2} aria-hidden />
+            Cook this
+          </button>
+          <Link
+            href={`/recipes/${recipe.id}/edit`}
+            className="border-border-strong hover:bg-surface-muted min-h-tap flex w-fit items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors"
+          >
+            <Pencil size={15} strokeWidth={2} aria-hidden />
+            Edit
+          </Link>
+        </div>
       </header>
 
       {cooking ? (

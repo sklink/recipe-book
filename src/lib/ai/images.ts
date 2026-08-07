@@ -36,8 +36,8 @@ class OpenAIImageGenerator implements ImageGenerator {
     if (!base64) throw new Error("Image provider returned no image.");
 
     // Roughly $0.04 at medium quality — recorded so the usage log stays honest
-    // even though the provider doesn't itemise per call.
-    return { base64, costMillicents: 40 };
+    // even though the provider doesn't itemise per call. Millicents: 4000 = 4c.
+    return { base64, costMillicents: 4000 };
   }
 }
 
