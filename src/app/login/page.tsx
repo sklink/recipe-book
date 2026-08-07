@@ -1,3 +1,4 @@
+import { HashSession } from "@/app/login/hash-session";
 import { LoginForm } from "@/app/login/login-form";
 
 export default async function LoginPage({
@@ -12,7 +13,9 @@ export default async function LoginPage({
       ? "That account isn't allowed to sign in."
       : error === "exchange_failed"
         ? "That sign-in link was invalid or has expired. Request a new one."
-        : undefined;
+        : error === "no_token"
+          ? "That link didn't carry a sign-in token. Request a new one."
+          : undefined;
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-sm flex-col justify-center gap-6 px-6 py-16">
@@ -30,6 +33,7 @@ export default async function LoginPage({
         </p>
       ) : null}
 
+      <HashSession />
       <LoginForm next={next} />
     </main>
   );
