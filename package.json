@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "db:push": "supabase db push",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/supabase/types.ts",
-    "layout:check": "node scripts/layout-check.mjs"
+    "layout:check": "node scripts/layout-check.mjs",
+    "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
