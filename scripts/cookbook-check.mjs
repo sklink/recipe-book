@@ -36,18 +36,35 @@ check(
   (await page.locator('[role="img"][aria-label*="not yet generated"]').count()) === 23,
 );
 check("stock badge present", (await page.locator('article:has-text("missing")').count()) > 0);
-const tints = await page.evaluate(() =>
-  new Set([...document.querySelectorAll('[role="img"]')].map((e) => [...e.classList].find((c) => c.startsWith("tint-")))).size);
+const tints = await page.evaluate(
+  () =>
+    new Set(
+      [...document.querySelectorAll('[role="img"]')].map((e) =>
+        [...e.classList].find((c) => c.startsWith("tint-")),
+      ),
+    ).size,
+);
 check("placeholder tints varied", tints >= 6, `${tints} distinct`);
 await page.screenshot({ path: "/tmp/shot-cards-desktop.png" });
 
 // Dark mode must not glare — placeholders need dark counterparts.
-const dark = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, colorScheme: "dark", storageState: await ctx.storageState() });
+const dark = await browser.newContext({
+  viewport: { width: 1440, height: 900 },
+  deviceScaleFactor: 2,
+  colorScheme: "dark",
+  storageState: await ctx.storageState(),
+});
 const dp = await dark.newPage();
 await dp.goto("http://localhost:3000/recipes", { waitUntil: "networkidle" });
 await dp.waitForSelector('[data-testid="recipe-grid"] article');
-const bg = await dp.evaluate(() => getComputedStyle(document.querySelector('[role="img"]')).backgroundColor);
-const lum = (bg.match(/\d+/g) ?? []).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) / 3;
+const bg = await dp.evaluate(
+  () => getComputedStyle(document.querySelector('[role="img"]')).backgroundColor,
+);
+const lum =
+  (bg.match(/\d+/g) ?? [])
+    .slice(0, 3)
+    .map(Number)
+    .reduce((a, b) => a + b, 0) / 3;
 check("dark-mode placeholder is dark", lum < 90, `mean channel ${lum.toFixed(0)}`);
 await dp.screenshot({ path: "/tmp/shot-cards-dark.png" });
 await dark.close();
