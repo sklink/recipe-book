@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, Clock, GitBranch, Users } from "lucide-react";
 
+import { AddToCartButton } from "@/components/add-to-cart-button";
 import { RecipeImage } from "@/components/recipe-image";
 import { useRecipe } from "@/lib/recipes/hooks";
 import { formatMinutes } from "@/lib/recipes/time-buckets";
@@ -137,7 +138,9 @@ export function RecipeDetailView({ id }: { id: string }) {
             <IngredientRow key={ingredient.ingredientId} ingredient={ingredient} />
           ))}
         </ul>
-        {/* Add to cart lands in T16, once the cart API exists. */}
+        <div className="pt-2">
+          <AddToCartButton recipeId={recipe.id} missingCount={missing} />
+        </div>
       </section>
 
       <section className="flex flex-col gap-3">

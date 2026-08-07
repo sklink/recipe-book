@@ -1,14 +1,14 @@
+import { CartView } from "@/app/(app)/cart/cart-view";
 import { PageHeader } from "@/components/page-header";
-import { TicketStub } from "@/components/ticket-stub";
 
 export default function CartPage() {
   return (
     <>
-      <PageHeader title="Cart" description="What to buy, and how much of it." />
-      <TicketStub
-        ticket="T16 and T17"
-        what="Shopping list grouped by aisle, with check-off and Done shopping."
+      <PageHeader
+        title="Cart"
+        description="What to buy. Tick things off as you shop, then move them into your kitchen in one go."
       />
+      <CartView />
     </>
   );
 }
