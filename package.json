@@ -11,7 +11,8 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "db:push": "supabase db push",
-    "db:types": "supabase gen types typescript --linked --schema public > src/lib/supabase/types.ts"
+    "db:types": "supabase gen types typescript --linked --schema public > src/lib/supabase/types.ts",
+    "layout:check": "node scripts/layout-check.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
