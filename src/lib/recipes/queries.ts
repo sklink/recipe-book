@@ -123,6 +123,7 @@ function toSummary(raw: RawRecipe, variantCounts: Map<string, number>): RecipeSu
     variantCount: variantCounts.get(raw.id) ?? 0,
     isFavourite: raw.is_favourite,
     missingCount: missingIngredients(ingredients).length,
+    ingredientIds: ingredients.map((i) => i.ingredientId),
   };
 }
 

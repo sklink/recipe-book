@@ -1,17 +1,14 @@
+import { IngredientsManager } from "@/app/(app)/ingredients/ingredients-manager";
 import { PageHeader } from "@/components/page-header";
-import { TicketStub } from "@/components/ticket-stub";
 
 export default function IngredientsPage() {
   return (
     <>
       <PageHeader
         title="Ingredients"
-        description="What's in the kitchen. Toggle anything in or out of stock."
+        description="What's in the kitchen. Tick anything you have; star the things you always keep, so they stop counting as missing."
       />
-      <TicketStub
-        ticket="T12 and T12b"
-        what="Ingredient list grouped by category, with stock toggles and staple marking."
-      />
+      <IngredientsManager />
     </>
   );
 }

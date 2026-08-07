@@ -34,6 +34,12 @@ export type RecipeSummary = {
   isFavourite: boolean;
   /** Non-optional, non-staple ingredients currently out of stock. */
   missingCount: number;
+  /**
+   * Every ingredient this recipe uses. Carried on the summary so the sidebar
+   * can build its list from cached card data instead of a second round trip —
+   * ids only, resolved against the ingredients query the sidebar already holds.
+   */
+  ingredientIds: string[];
 };
 
 export type RecipeDetail = RecipeSummary & {

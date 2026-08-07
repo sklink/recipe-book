@@ -1,6 +1,7 @@
 import { RecipeList } from "@/app/(app)/recipes/recipe-list";
 import { FilterChips, type Chip } from "@/components/filter-chips";
 import { PageHeader } from "@/components/page-header";
+import { RequireIngredientsToggle } from "@/components/require-ingredients-toggle";
 import { MEAL_LABELS, isMealType } from "@/lib/recipes/meal-types";
 import { BUCKET_LABELS, isTimeBucket } from "@/lib/recipes/time-buckets";
 import type { RecipeFilters } from "@/lib/recipes/types";
@@ -12,22 +13,38 @@ import type { RecipeFilters } from "@/lib/recipes/types";
 export default async function RecipesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mealType?: string; timeBucket?: string; search?: string }>;
+  searchParams: Promise<{
+    mealType?: string;
+    timeBucket?: string;
+    search?: string;
+    requireIngredients?: string;
+  }>;
 }) {
   const params = await searchParams;
 
   const mealType = isMealType(params.mealType) ? params.mealType : undefined;
   const timeBucket = isTimeBucket(params.timeBucket) ? params.timeBucket : undefined;
   const search = params.search?.trim() || undefined;
+  const requireIngredients = params.requireIngredients === "true";
 
-  const filters: RecipeFilters = { mealType, timeBucket, search };
+  const filters: RecipeFilters = { mealType, timeBucket, search, requireIngredients };
 
-  /** Rebuild the URL without one filter, for that chip's remove link. */
-  const hrefWithout = (drop: "mealType" | "timeBucket" | "search") => {
+  const buildHref = (
+    overrides: Partial<
+      Record<"mealType" | "timeBucket" | "search" | "requireIngredients", string | undefined>
+    >,
+  ) => {
     const next = new URLSearchParams();
-    if (mealType && drop !== "mealType") next.set("mealType", mealType);
-    if (timeBucket && drop !== "timeBucket") next.set("timeBucket", timeBucket);
-    if (search && drop !== "search") next.set("search", search);
+    const values = {
+      mealType,
+      timeBucket,
+      search,
+      requireIngredients: requireIngredients ? "true" : undefined,
+      ...overrides,
+    };
+    for (const [key, value] of Object.entries(values)) {
+      if (value) next.set(key, value);
+    }
     const qs = next.toString();
     return qs ? `/recipes?${qs}` : "/recipes";
   };
@@ -37,18 +54,22 @@ export default async function RecipesPage({
     chips.push({
       key: "mealType",
       label: MEAL_LABELS[mealType],
-      removeHref: hrefWithout("mealType"),
+      removeHref: buildHref({ mealType: undefined }),
     });
   }
   if (timeBucket) {
     chips.push({
       key: "timeBucket",
       label: BUCKET_LABELS[timeBucket],
-      removeHref: hrefWithout("timeBucket"),
+      removeHref: buildHref({ timeBucket: undefined }),
     });
   }
   if (search) {
-    chips.push({ key: "search", label: `“${search}”`, removeHref: hrefWithout("search") });
+    chips.push({
+      key: "search",
+      label: `“${search}”`,
+      removeHref: buildHref({ search: undefined }),
+    });
   }
 
   const filtered = chips.length > 0;
@@ -64,11 +85,18 @@ export default async function RecipesPage({
         }
       />
 
-      {filtered ? (
-        <div className="pb-5">
-          <FilterChips chips={chips} clearHref="/recipes" />
-        </div>
-      ) : null}
+      <div className="flex flex-col gap-3 pb-5">
+        <RequireIngredientsToggle
+          enabled={requireIngredients}
+          href={buildHref({ requireIngredients: requireIngredients ? undefined : "true" })}
+        />
+        {filtered ? (
+          <FilterChips
+            chips={chips}
+            clearHref={requireIngredients ? "/recipes?requireIngredients=true" : "/recipes"}
+          />
+        ) : null}
+      </div>
 
       <RecipeList filters={filters} />
     </>
