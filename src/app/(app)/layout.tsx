@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth/session";
  * Shell for every signed-in page. Login sits outside this group so it renders
  * without nav or sidebar.
  */
-export default async function AppLayout({ children }: LayoutProps<"/">) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
   await requireUser();
 
   return (
