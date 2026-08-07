@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Clock, GitBranch, Users } from "lucide-react";
 
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { NewVariantButton } from "@/components/new-variant-button";
 import { RecipeImage } from "@/components/recipe-image";
 import { useRecipe } from "@/lib/recipes/hooks";
 import { formatMinutes } from "@/lib/recipes/time-buckets";
@@ -138,8 +139,9 @@ export function RecipeDetailView({ id }: { id: string }) {
             <IngredientRow key={ingredient.ingredientId} ingredient={ingredient} />
           ))}
         </ul>
-        <div className="pt-2">
+        <div className="flex flex-wrap items-center gap-3 pt-2">
           <AddToCartButton recipeId={recipe.id} missingCount={missing} />
+          <NewVariantButton recipeId={recipe.id} recipeTitle={recipe.title} />
         </div>
       </section>
 

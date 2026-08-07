@@ -1,5 +1,6 @@
 "use client";
 
+import { NewVariantButton } from "@/components/new-variant-button";
 import { RecipeCard } from "@/components/recipe-card";
 import { useRecipes } from "@/lib/recipes/hooks";
 import type { RecipeFilters } from "@/lib/recipes/types";
@@ -88,7 +89,11 @@ export function RecipeList({ filters = {} }: { filters?: RecipeFilters }) {
       </div>
       <Grid>
         {recipes.map((recipe) => (
-          <RecipeCard key={recipe.id} recipe={recipe} />
+          <RecipeCard
+            key={recipe.id}
+            recipe={recipe}
+            action={<NewVariantButton recipeId={recipe.id} recipeTitle={recipe.title} compact />}
+          />
         ))}
       </Grid>
     </div>

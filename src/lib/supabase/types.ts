@@ -13,6 +13,7 @@ export type ImageStatus = "pending" | "ready" | "failed";
 export type RecipeSource = "manual" | "ai" | "imported";
 export type CookOutcome = "flopped" | "rough" | "good" | "nailed";
 export type MasteryLevel = "untried" | "attempted" | "learning" | "reliable" | "mastered";
+export type AiGenerationKind = "recipe" | "variant" | "image" | "import";
 
 export type Database = {
   public: {
@@ -241,6 +242,52 @@ export type Database = {
           },
         ];
       };
+      ai_generations: {
+        Row: {
+          id: string;
+          kind: AiGenerationKind;
+          model: string;
+          recipe_id: string | null;
+          input_tokens: number | null;
+          output_tokens: number | null;
+          cost_millicents: number | null;
+          duration_ms: number | null;
+          error: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          kind: AiGenerationKind;
+          model: string;
+          recipe_id?: string | null;
+          input_tokens?: number | null;
+          output_tokens?: number | null;
+          cost_millicents?: number | null;
+          duration_ms?: number | null;
+          error?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          kind?: AiGenerationKind;
+          model?: string;
+          recipe_id?: string | null;
+          input_tokens?: number | null;
+          output_tokens?: number | null;
+          cost_millicents?: number | null;
+          duration_ms?: number | null;
+          error?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_generations_recipe_id_fkey";
+            columns: ["recipe_id"];
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       cook_logs: {
         Row: {
           id: string;
@@ -277,8 +324,18 @@ export type Database = {
       };
     };
     Views: Record<never, never>;
-    Functions: Record<never, never>;
+    Functions: {
+      match_ingredient: {
+        Args: { query: string; threshold?: number };
+        Returns: { id: string; name: string; score: number }[];
+      };
+      match_ingredient_alias: {
+        Args: { query: string; threshold?: number };
+        Returns: { id: string; name: string; score: number }[];
+      };
+    };
     Enums: {
+      ai_generation_kind: AiGenerationKind;
       cook_outcome: CookOutcome;
       image_status: ImageStatus;
       mastery_level: MasteryLevel;
