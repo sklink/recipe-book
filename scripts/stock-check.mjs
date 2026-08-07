@@ -84,8 +84,12 @@ patchMode = "fail";
 await rows.nth(1).click();
 // Observe the whole cycle: optimistic bump to 2, then rollback to 1. Reading
 // the count without waiting for both catches the in-flight frame and flakes.
-await page.waitForFunction(() => document.body.textContent.includes("2 of 108 in stock"), null, { timeout: 5000 });
-await page.waitForFunction(() => document.body.textContent.includes("1 of 108 in stock"), null, { timeout: 10000 });
+await page.waitForFunction(() => document.body.textContent.includes("2 of 108 in stock"), null, {
+  timeout: 5000,
+});
+await page.waitForFunction(() => document.body.textContent.includes("1 of 108 in stock"), null, {
+  timeout: 10000,
+});
 const settled = await stockCount();
 check("failed write rolls back", settled === 1, `2 optimistically, settled at ${settled}`);
 patchMode = "normal";
@@ -235,7 +239,11 @@ const m = await mp.evaluate(() => ({
 check("no overflow at 375", m.sw <= m.cw, `${m.sw}/${m.cw}`);
 await mp.screenshot({ path: "/tmp/shot-sheet.png" });
 
-check("no unexpected 5xx", server5xx.length === injected, `${server5xx.length} seen, ${injected} injected on purpose`);
+check(
+  "no unexpected 5xx",
+  server5xx.length === injected,
+  `${server5xx.length} seen, ${injected} injected on purpose`,
+);
 await browser.close();
 console.log(fail === 0 ? "\nAll passed." : `\n${fail} failed.`);
 process.exit(fail === 0 ? 0 : 1);
