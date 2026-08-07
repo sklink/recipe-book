@@ -273,6 +273,18 @@ This is where the original "staple vs variation vs learn new" framing gets real 
 
 _Done when:_ filtering results to `Know it` returns only Reliable-and-above, the chips compose correctly with the meal-type and time filters already applied by the flow, and clearing them widens the set live.
 
+**T32 · Guiding parameters on the generate page**
+Generation was only ever steerable by arriving from the flow, which meant the page itself offered a single button and no say in what came back. It now carries its own controls, every axis leading with "Any" so the default is still "surprise me":
+
+- **Only what I have in** (Yes/No), first, because it changes what every other answer can be. Yes sends the model the kitchen's actual contents — in stock plus staples — and forbids anything else, preferring a simpler dish that works over a better one that needs a shopping trip. Fewer than five available ingredients returns a clear error rather than a doomed generation.
+- **Meal** and **Time**, seeded by the flow when you arrive from it and freely editable after.
+- **Cuisine**, **Base** (rice vs pasta vs no starch at all), **Protein**, **Goes with** — the four axes from the brief. "Goes with" shapes the dish without becoming it: the side is never part of the recipe.
+- Below the Generate button, under _Finer detail_: **Diet** (a hard constraint in the prompt — a "mostly vegetarian" recipe is a failed one), **Method** (a 40-minute braise and 40 minutes over a pan are different evenings), and **Ambition** (the "teach me something" axis, which the brief wanted and nothing else covered). Below rather than hidden: nine stacked selects would strand the button a long scroll down a phone screen, but a disclosure costs a tap for something that's cheaper to just scroll past.
+
+Options live in one file (`src/lib/ai/generation-options.ts`) so adding a cuisine is a one-line change, and the result screen echoes back what was asked for so a surprising dish is explicable.
+
+_Done when:_ the flow still seeds meal and time, every axis defaults to Any and reaches the API, the Generate button sits between the two groups, "Only what I have in" produces a recipe drawn entirely from stock, and the page holds at 375px with 44px tap targets. Covered by `scripts/generate-options-check.mjs` and `scripts/generate-stocked-check.mjs`.
+
 ---
 
 ## 4. Build order
@@ -290,6 +302,7 @@ T22 → T23                       Variants
 T24 → T25                       Editing
 T26 → T27 → T28                 Polish
 T29 → T30 → T31                 Cook mode, cook log, mastery
+T32                             Guiding parameters on the generate page
 ```
 
 **First genuinely useful milestone: end of T10.** At that point you can open the app, answer two questions, and get a filtered list of things to cook. Everything after that is depth.

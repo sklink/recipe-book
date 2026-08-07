@@ -4,12 +4,31 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RefreshCw, Sparkles } from "lucide-react";
 
+import {
+  GenerationControls,
+  SecondaryControls,
+  type Controls,
+} from "@/app/(app)/generate/generation-controls";
 import { GeneratedRecipeCard } from "@/components/generated-recipe-card";
 import { useGenerateRecipe, useKeepRecipe } from "@/lib/ai/hooks";
 import { formatCost } from "@/lib/ai/format";
-import { BUCKET_DESCRIPTIONS, BUCKET_LABELS, type TimeBucket } from "@/lib/recipes/time-buckets";
+import { OPTION_SETS, labelFor } from "@/lib/ai/generation-options";
 import { MEAL_LABELS } from "@/lib/recipes/meal-types";
+import { BUCKET_LABELS, type TimeBucket } from "@/lib/recipes/time-buckets";
 import type { MealType } from "@/lib/supabase/types";
+
+/** A short human summary of what was asked for, shown alongside the result. */
+function describe(controls: Controls): string[] {
+  const parts: string[] = [];
+  if (controls.mealType) parts.push(MEAL_LABELS[controls.mealType]);
+  if (controls.timeBucket) parts.push(BUCKET_LABELS[controls.timeBucket]);
+  for (const set of OPTION_SETS) {
+    const label = labelFor(set.options, controls[set.key]);
+    if (label) parts.push(label);
+  }
+  if (controls.useAvailable) parts.push("in stock only");
+  return parts;
+}
 
 export function Generator({
   mealType,
@@ -21,25 +40,39 @@ export function Generator({
   const router = useRouter();
   const generate = useGenerateRecipe();
   const keep = useKeepRecipe();
-  // Remembered so "Try Again" can tell the model what it just rejected.
+
+  // Seeded from the flow when it sends you here; freely editable afterwards.
+  const initial: Controls = { mealType, timeBucket };
+  const [controls, setControls] = useState<Controls>(initial);
   const [lastTitle, setLastTitle] = useState<string>();
+  // What produced the result on screen, so the summary can't drift from it
+  // while the controls are being changed for the next attempt.
+  const [usedControls, setUsedControls] = useState<Controls>(initial);
 
   const run = (previousAttempt?: string) => {
     keep.reset();
+    setUsedControls(controls);
     generate.mutate(
-      { mealType, timeBucket, previousAttempt },
+      {
+        mealType: controls.mealType,
+        timeBucket: controls.timeBucket,
+        previousAttempt,
+        options: {
+          cuisine: controls.cuisine,
+          base: controls.base,
+          protein: controls.protein,
+          side: controls.side,
+          diet: controls.diet,
+          method: controls.method,
+          ambition: controls.ambition,
+          useAvailable: controls.useAvailable,
+        },
+      },
       { onSuccess: (data) => setLastTitle(data.recipe.title) },
     );
   };
 
-  const context =
-    mealType && timeBucket
-      ? `${MEAL_LABELS[mealType]} · ${BUCKET_LABELS[timeBucket]} — ${BUCKET_DESCRIPTIONS[timeBucket].toLowerCase()}`
-      : mealType
-        ? MEAL_LABELS[mealType]
-        : timeBucket
-          ? BUCKET_LABELS[timeBucket]
-          : undefined;
+  const reset = () => setControls({ useAvailable: controls.useAvailable });
 
   if (keep.isSuccess) {
     const renamed = keep.data.resolutions.filter((r) => r.method !== "created");
@@ -72,7 +105,10 @@ export function Generator({
           </button>
           <button
             type="button"
-            onClick={() => run()}
+            onClick={() => {
+              keep.reset();
+              generate.reset();
+            }}
             className="border-border-strong hover:bg-surface-muted min-h-tap rounded-lg border px-4 text-sm font-medium transition-colors"
           >
             Generate another
@@ -82,104 +118,117 @@ export function Generator({
     );
   }
 
-  if (generate.isPending) {
-    return (
-      <div className="flex flex-col gap-3">
-        <p className="text-muted flex items-center gap-2 text-sm">
-          <Sparkles size={16} strokeWidth={2} aria-hidden className="animate-pulse" />
-          Thinking of something{context ? ` for ${context.toLowerCase()}` : ""}…
-        </p>
+  const summary = describe(usedControls);
+
+  return (
+    <div className="flex flex-col gap-6">
+      <GenerationControls
+        value={controls}
+        onChange={setControls}
+        disabled={generate.isPending || keep.isPending}
+      />
+
+      <div className="border-border flex flex-wrap items-center gap-3 border-t pt-5">
+        <button
+          type="button"
+          onClick={() => run()}
+          disabled={generate.isPending}
+          className="bg-accent text-accent-fg hover:bg-accent-hover min-h-tap flex items-center gap-2 rounded-lg px-5 text-sm font-medium transition-colors disabled:opacity-60"
+        >
+          <Sparkles
+            size={16}
+            strokeWidth={2}
+            aria-hidden
+            className={generate.isPending ? "animate-pulse" : ""}
+          />
+          {generate.isPending
+            ? "Thinking…"
+            : generate.isSuccess
+              ? "Generate again"
+              : "Generate a recipe"}
+        </button>
+        {generate.isSuccess ? (
+          <button
+            type="button"
+            onClick={() => run(lastTitle)}
+            disabled={generate.isPending}
+            className="border-border-strong hover:bg-surface-muted min-h-tap flex items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors disabled:opacity-60"
+          >
+            <RefreshCw size={15} strokeWidth={2} aria-hidden />
+            Something different
+          </button>
+        ) : null}
+      </div>
+
+      <SecondaryControls
+        value={controls}
+        onChange={setControls}
+        onReset={reset}
+        disabled={generate.isPending || keep.isPending}
+      />
+
+      {generate.isPending ? (
         <div className="flex flex-col gap-2">
           <div className="bg-surface-muted h-8 w-2/3 animate-pulse rounded" />
           <div className="bg-surface-muted h-4 w-full animate-pulse rounded" />
           <div className="bg-surface-muted h-4 w-5/6 animate-pulse rounded" />
         </div>
-      </div>
-    );
-  }
+      ) : null}
 
-  if (generate.isError) {
-    return (
-      <div className="flex flex-col gap-3">
+      {generate.isError ? (
         <p
           role="alert"
           className="border-danger/30 bg-danger-muted rounded-md border px-3 py-2 text-sm"
         >
           {generate.error instanceof Error ? generate.error.message : "Generation failed."}
         </p>
-        <button
-          type="button"
-          onClick={() => run(lastTitle)}
-          className="border-border-strong hover:bg-surface-muted min-h-tap w-fit rounded-lg border px-4 text-sm font-medium"
-        >
-          Try again
-        </button>
-      </div>
-    );
-  }
-
-  if (generate.isSuccess) {
-    const { recipe, similar, usage } = generate.data;
-    return (
-      <div className="flex flex-col gap-4">
-        <GeneratedRecipeCard
-          recipe={recipe}
-          similar={similar}
-          actions={
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => keep.mutate({ recipe })}
-                  disabled={keep.isPending}
-                  className="bg-accent text-accent-fg hover:bg-accent-hover min-h-tap rounded-lg px-5 text-sm font-medium transition-colors disabled:opacity-60"
-                >
-                  {keep.isPending ? "Saving…" : "Keep"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => run(recipe.title)}
-                  disabled={keep.isPending}
-                  className="border-border-strong hover:bg-surface-muted min-h-tap flex items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors disabled:opacity-60"
-                >
-                  <RefreshCw size={15} strokeWidth={2} aria-hidden />
-                  Try again
-                </button>
-              </div>
-              {keep.isError ? (
-                <p role="alert" className="text-danger text-sm">
-                  {keep.error instanceof Error ? keep.error.message : "Could not save."}
-                </p>
-              ) : null}
-              <p className="text-subtle text-xs">
-                Nothing is saved until you keep it. This one cost about{" "}
-                {formatCost(usage.costMillicents)}.
-              </p>
-            </div>
-          }
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      {context ? (
-        <p
-          data-testid="generate-context"
-          className="border-border bg-surface-muted rounded-lg border px-4 py-3 text-sm"
-        >
-          Generating for: <span className="font-medium">{context}</span>
-        </p>
       ) : null}
-      <button
-        type="button"
-        onClick={() => run()}
-        className="bg-accent text-accent-fg hover:bg-accent-hover min-h-tap flex w-fit items-center gap-2 rounded-lg px-5 text-sm font-medium transition-colors"
-      >
-        <Sparkles size={16} strokeWidth={2} aria-hidden />
-        Generate a recipe
-      </button>
+
+      {generate.isSuccess && !generate.isPending ? (
+        <>
+          {summary.length > 0 ? (
+            <p data-testid="generate-summary" className="text-subtle text-xs">
+              Asked for: {summary.join(" · ")}
+            </p>
+          ) : null}
+          <GeneratedRecipeCard
+            recipe={generate.data.recipe}
+            similar={generate.data.similar}
+            actions={
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => keep.mutate({ recipe: generate.data.recipe })}
+                    disabled={keep.isPending}
+                    className="bg-accent text-accent-fg hover:bg-accent-hover min-h-tap rounded-lg px-5 text-sm font-medium transition-colors disabled:opacity-60"
+                  >
+                    {keep.isPending ? "Saving…" : "Keep"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => run(generate.data.recipe.title)}
+                    disabled={keep.isPending}
+                    className="border-border-strong hover:bg-surface-muted min-h-tap flex items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors disabled:opacity-60"
+                  >
+                    <RefreshCw size={15} strokeWidth={2} aria-hidden />
+                    Try again
+                  </button>
+                </div>
+                {keep.isError ? (
+                  <p role="alert" className="text-danger text-sm">
+                    {keep.error instanceof Error ? keep.error.message : "Could not save."}
+                  </p>
+                ) : null}
+                <p className="text-subtle text-xs">
+                  Nothing is saved until you keep it. This one cost about{" "}
+                  {formatCost(generate.data.usage.costMillicents)}.
+                </p>
+              </div>
+            }
+          />
+        </>
+      ) : null}
     </div>
   );
 }

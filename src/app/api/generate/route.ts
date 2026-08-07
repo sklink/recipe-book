@@ -8,6 +8,7 @@ import { getRecipe } from "@/lib/recipes/queries";
 import { isMealType } from "@/lib/recipes/meal-types";
 import { isTimeBucket } from "@/lib/recipes/time-buckets";
 import { createClient } from "@/lib/supabase/server";
+import type { GenerationOptions } from "@/lib/ai/generation-options";
 
 /**
  * POST /api/generate
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
     timeBucket?: string;
     previousAttempt?: string;
     parentRecipeId?: string;
+    options?: GenerationOptions;
   };
   try {
     body = await request.json();
@@ -61,11 +63,44 @@ export async function POST(request: NextRequest) {
       .select("title")
       .is("parent_recipe_id", null);
 
+    // Only fetched when asked for: sending the pantry on every request would
+    // cost tokens on a constraint the user didn't choose.
+    let availableIngredients: string[] | undefined;
+    if (body.options?.useAvailable) {
+      const { data: stocked } = await supabase
+        .from("ingredients")
+        .select("name, is_staple, ingredient_stock ( in_stock )")
+        .order("name");
+
+      const usable = (stocked ?? []).filter((row) => {
+        const stock = row.ingredient_stock as
+          { in_stock: boolean } | { in_stock: boolean }[] | null;
+        const inStock = Array.isArray(stock)
+          ? Boolean(stock[0]?.in_stock)
+          : Boolean(stock?.in_stock);
+        // Staples count as available by definition — that's what the flag means.
+        return row.is_staple || inStock;
+      });
+
+      if (usable.length < 5) {
+        return NextResponse.json(
+          {
+            error:
+              "Not enough ingredients are marked in stock to build a recipe from. Add some on the Ingredients page, or turn that option off.",
+          },
+          { status: 400 },
+        );
+      }
+      availableIngredients = usable.map((row) => row.name);
+    }
+
     const { recipe, usage } = await generateRecipe({
       mealType: isMealType(body.mealType) ? body.mealType : undefined,
       timeBucket: isTimeBucket(body.timeBucket) ? body.timeBucket : undefined,
       avoidTitles: (existing ?? []).map((r) => r.title),
       previousAttempt: body.previousAttempt,
+      options: body.options,
+      availableIngredients,
     });
 
     // T20b — warn rather than block: the user decides whether it's a duplicate.

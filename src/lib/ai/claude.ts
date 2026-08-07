@@ -3,6 +3,18 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 
 import { GeneratedRecipeSchema, type GeneratedRecipe } from "@/lib/ai/schema";
 import { assertWithinDailyCap, claudeCostMillicents, recordGeneration } from "@/lib/ai/usage";
+import {
+  AMBITIONS,
+  BASES,
+  CUISINES,
+  DIETS,
+  METHODS,
+  PROTEINS,
+  SIDES,
+  labelFor,
+  meaningful,
+  type GenerationOptions,
+} from "@/lib/ai/generation-options";
 import { BUCKET_DESCRIPTIONS, type TimeBucket } from "@/lib/recipes/time-buckets";
 import type { MealType } from "@/lib/supabase/types";
 
@@ -24,11 +36,60 @@ Ingredient names must be bare and canonical, because they are matched against a 
 
 Times must be honest. If something needs 90 minutes, say 90.`;
 
+/**
+ * Turns the selected options into instructions.
+ *
+ * Each axis is stated only when set: an unset one is left to the model rather
+ * than filled with a default, which is what "Any" is supposed to mean. Diet is
+ * phrased as a hard rule because a "mostly vegetarian" recipe is a failed one.
+ */
+function optionLines(options: GenerationOptions): string[] {
+  const lines: string[] = [];
+
+  const cuisine = labelFor(CUISINES, options.cuisine);
+  if (cuisine) lines.push(`Cuisine: ${cuisine}.`);
+
+  const base = meaningful(options.base);
+  if (base === "none") lines.push("Build it around protein and vegetables, with no starch base.");
+  else if (base) lines.push(`Build it on ${labelFor(BASES, options.base)?.toLowerCase()}.`);
+
+  const protein = meaningful(options.protein);
+  if (protein === "none") lines.push("No main protein — vegetables should carry it.");
+  else if (protein)
+    lines.push(`Main protein: ${labelFor(PROTEINS, options.protein)?.toLowerCase()}.`);
+
+  const side = meaningful(options.side);
+  if (side === "standalone")
+    lines.push("It should be a complete meal on its own, needing no side.");
+  else if (side) {
+    lines.push(
+      `It will be served with ${labelFor(SIDES, options.side)?.toLowerCase()} — design it to suit that, and do not include the side itself in the recipe.`,
+    );
+  }
+
+  const diet = labelFor(DIETS, options.diet);
+  if (diet) {
+    lines.push(
+      `It must be strictly ${diet.toLowerCase()}. This is a hard constraint — every ingredient must comply.`,
+    );
+  }
+
+  const method = labelFor(METHODS, options.method);
+  if (method) lines.push(`Cooking method: ${method.toLowerCase()}.`);
+
+  const ambition = labelFor(AMBITIONS, options.ambition);
+  if (ambition) lines.push(`Ambition: ${ambition.toLowerCase()}.`);
+
+  return lines;
+}
+
 function buildPrompt(params: {
   mealType?: MealType;
   timeBucket?: TimeBucket;
   avoidTitles: string[];
   previousAttempt?: string;
+  options?: GenerationOptions;
+  availableIngredients?: string[];
 }): string {
   const lines: string[] = ["Invent one recipe."];
 
@@ -36,6 +97,21 @@ function buildPrompt(params: {
   if (params.timeBucket) {
     lines.push(
       `It must take ${BUCKET_DESCRIPTIONS[params.timeBucket].toLowerCase()} — that is a hard constraint, not a target.`,
+    );
+  }
+
+  const chosen = optionLines(params.options ?? {});
+  if (chosen.length > 0) lines.push("", ...chosen);
+
+  if (params.availableIngredients?.length) {
+    lines.push(
+      "",
+      "Use ONLY the ingredients below — this is the entire contents of the kitchen. Do not " +
+        "introduce anything else, not even something minor. If these cannot make a good dish " +
+        "meeting the other constraints, prefer a simpler dish that genuinely works over a better " +
+        "one that needs a shopping trip.",
+      "",
+      params.availableIngredients.join(", "),
     );
   }
 
@@ -67,6 +143,8 @@ export async function generateRecipe(params: {
   timeBucket?: TimeBucket;
   avoidTitles?: string[];
   previousAttempt?: string;
+  options?: GenerationOptions;
+  availableIngredients?: string[];
 }): Promise<GenerationResult> {
   await assertWithinDailyCap();
 
@@ -92,6 +170,8 @@ export async function generateRecipe(params: {
             timeBucket: params.timeBucket,
             avoidTitles: params.avoidTitles ?? [],
             previousAttempt: params.previousAttempt,
+            options: params.options,
+            availableIngredients: params.availableIngredients,
           }),
         },
       ],

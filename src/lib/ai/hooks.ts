@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ingredientKeys } from "@/lib/ingredients/hooks";
 import { recipeKeys } from "@/lib/recipes/hooks";
 import type { GeneratedRecipe } from "@/lib/ai/schema";
+import type { GenerationOptions } from "@/lib/ai/generation-options";
 import type { MealType } from "@/lib/supabase/types";
 import type { TimeBucket } from "@/lib/recipes/time-buckets";
 
@@ -41,6 +42,7 @@ export function useGenerateRecipe() {
       mealType?: MealType;
       timeBucket?: TimeBucket;
       previousAttempt?: string;
+      options?: GenerationOptions;
     }) => post<GenerateResponse>(params),
   });
 }
