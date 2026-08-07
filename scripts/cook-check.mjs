@@ -49,8 +49,12 @@ const before = (await api(`/api/recipes/${target.id}`)).body;
 for (const log of before.cookLogs) {
   await page.evaluate((id) => fetch(`/api/cook-logs?id=${id}`, { method: "DELETE" }), log.id);
 }
-await api("/api/cook-logs", { method: "PATCH", body: JSON.stringify({ recipeId: target.id, masteryOverride: null }) });
-if (before.cookLogs.length) console.log(`  (cleared ${before.cookLogs.length} log entries from a previous run)`);
+await api("/api/cook-logs", {
+  method: "PATCH",
+  body: JSON.stringify({ recipeId: target.id, masteryOverride: null }),
+});
+if (before.cookLogs.length)
+  console.log(`  (cleared ${before.cookLogs.length} log entries from a previous run)`);
 const fresh = (await api("/api/recipes")).body.recipes.find((r) => r.title === "Shakshuka");
 Object.assign(target, fresh);
 check("recipes carry mastery", Boolean(target?.mastery), JSON.stringify(target?.mastery?.level));

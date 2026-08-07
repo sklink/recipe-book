@@ -14,7 +14,8 @@
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/supabase/types.ts",
     "layout:check": "node scripts/layout-check.mjs",
     "seed": "node scripts/seed.mjs",
-    "test:normalise": "node scripts/normalise-check.mjs"
+    "test:normalise": "node scripts/normalise-check.mjs",
+    "test:mastery": "node scripts/mastery-check.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
