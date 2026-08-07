@@ -4,6 +4,19 @@ A cookbook that answers "what should I cook right now?" based on meal type, time
 
 ---
 
+## Progress
+
+| Ticket | Status | Notes |
+|---|---|---|
+| T1 Scaffold + deploy | **Done** | Next.js 16 / React 19 / Tailwind 4 / TS 5, Prettier, live on Vercel with push-to-deploy |
+| T2 Supabase schema | **Code complete** | Migration + typed clients written and validated against local Postgres 15. Needs a Supabase project to `db:push` against. |
+| T3 Auth | **Code complete** | Magic link + single-address allowlist + route gating, redirect behaviour verified. Needs a real project to exercise end to end. |
+| T4 App shell | Next | |
+
+Everything from T5 onward is unstarted.
+
+---
+
 ## 1. Decisions locked in
 
 | Area           | Decision                                                                                        |
