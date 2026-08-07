@@ -1,50 +1,41 @@
 "use client";
 
-import Link from "next/link";
-
+import { RecipeCard } from "@/components/recipe-card";
 import { useRecipes } from "@/lib/recipes/hooks";
-import { formatMinutes } from "@/lib/recipes/time-buckets";
-import type { RecipeSummary } from "@/lib/recipes/types";
+import type { RecipeFilters } from "@/lib/recipes/types";
 
-/**
- * Minimal list, deliberately. T7 turns this into the card grid with imagery;
- * this exists so the data and cache layer has a consumer to be verified through.
- */
-function Row({ recipe }: { recipe: RecipeSummary }) {
+function CardSkeleton() {
   return (
-    <li>
-      <Link
-        href={`/recipes/${recipe.id}`}
-        className="border-border hover:bg-surface-muted min-h-tap flex flex-col gap-1 rounded-lg border p-4 transition-colors"
-      >
-        <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="font-display text-lg font-semibold">{recipe.title}</span>
-          <span className="text-subtle text-xs">{formatMinutes(recipe.timeMinutes)}</span>
-          <span className="text-subtle text-xs">{recipe.mealTypes.join(" · ")}</span>
-          {recipe.variantCount > 0 ? (
-            <span className="text-accent text-xs">
-              {recipe.variantCount} variant{recipe.variantCount === 1 ? "" : "s"}
-            </span>
-          ) : null}
-        </span>
-        {recipe.description ? (
-          <span className="text-muted text-sm">{recipe.description}</span>
-        ) : null}
-        {recipe.missingCount > 0 ? (
-          <span className="text-warning text-xs">
-            {recipe.missingCount} ingredient{recipe.missingCount === 1 ? "" : "s"} missing
-          </span>
-        ) : null}
-      </Link>
-    </li>
+    <div className="border-border bg-surface overflow-hidden rounded-xl border">
+      <div className="bg-surface-muted aspect-[4/3] w-full animate-pulse" />
+      <div className="flex flex-col gap-2 p-4">
+        <div className="bg-surface-muted h-5 w-2/3 animate-pulse rounded" />
+        <div className="bg-surface-muted h-3 w-1/2 animate-pulse rounded" />
+        <div className="bg-surface-muted h-3 w-full animate-pulse rounded" />
+      </div>
+    </div>
   );
 }
 
-export function RecipeList() {
-  const { data, isPending, isError, error, isFetching } = useRecipes();
+function Grid({ children }: { children: React.ReactNode }) {
+  return (
+    <div data-testid="recipe-grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {children}
+    </div>
+  );
+}
+
+export function RecipeList({ filters = {} }: { filters?: RecipeFilters }) {
+  const { data, isPending, isError, error, isFetching } = useRecipes(filters);
 
   if (isPending) {
-    return <p className="text-muted text-sm">Loading recipes…</p>;
+    return (
+      <Grid>
+        {Array.from({ length: 6 }, (_, i) => (
+          <CardSkeleton key={i} />
+        ))}
+      </Grid>
+    );
   }
 
   if (isError) {
@@ -58,21 +49,48 @@ export function RecipeList() {
     );
   }
 
-  const recipes = data.recipes;
+  const { recipes, nearMisses } = data;
+
+  // requireIngredients matched nothing. Showing an empty page would be a dead
+  // end, so offer the closest things and say what each one needs.
+  if (recipes.length === 0 && nearMisses?.length) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="border-border bg-surface-muted rounded-lg border px-4 py-3 text-sm">
+          Nothing is fully cookable with what&rsquo;s in stock. These are the closest — each needs
+          only a few things.
+        </p>
+        <Grid>
+          {nearMisses.map((recipe) => (
+            <RecipeCard key={recipe.id} recipe={recipe} />
+          ))}
+        </Grid>
+      </div>
+    );
+  }
 
   if (recipes.length === 0) {
-    return <p className="text-muted text-sm">No recipes match.</p>;
+    return (
+      <p className="border-border text-muted rounded-lg border border-dashed px-4 py-8 text-center text-sm">
+        No recipes match these filters.
+      </p>
+    );
   }
 
   return (
-    <>
-      {/* Cached data renders immediately; this marks a background revalidation. */}
-      {isFetching ? <p className="text-subtle pb-2 text-xs">Refreshing…</p> : null}
-      <ul data-testid="recipe-list" className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
+      <div className="text-subtle flex items-center gap-2 text-xs" aria-live="polite">
+        <span>
+          {recipes.length} recipe{recipes.length === 1 ? "" : "s"}
+        </span>
+        {/* Cached data paints first; this marks the background revalidation. */}
+        {isFetching ? <span>· refreshing</span> : null}
+      </div>
+      <Grid>
         {recipes.map((recipe) => (
-          <Row key={recipe.id} recipe={recipe} />
+          <RecipeCard key={recipe.id} recipe={recipe} />
         ))}
-      </ul>
-    </>
+      </Grid>
+    </div>
   );
 }

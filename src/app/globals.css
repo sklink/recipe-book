@@ -124,6 +124,82 @@ body {
   border-radius: 0.25rem;
 }
 
+/*
+ * Recipe placeholder tints.
+ *
+ * A curated set rather than a hashed hue: a continuous hash clustered in greens
+ * and produced cold blues at the edges, neither of which reads as food. Eight
+ * warm, low-saturation tones, each with a dark counterpart — an inline pastel
+ * would glare against a dark background.
+ */
+.tint-0 {
+  --tint-bg: #f0dfd4;
+  --tint-fg: #9c5a38;
+} /* terracotta */
+.tint-1 {
+  --tint-bg: #f4e7cd;
+  --tint-fg: #8a6420;
+} /* amber */
+.tint-2 {
+  --tint-bg: #e5e9d3;
+  --tint-fg: #5f6b33;
+} /* olive */
+.tint-3 {
+  --tint-bg: #dce8de;
+  --tint-fg: #47664f;
+} /* sage */
+.tint-4 {
+  --tint-bg: #d6e7e6;
+  --tint-fg: #35625f;
+} /* teal */
+.tint-5 {
+  --tint-bg: #e9dee6;
+  --tint-fg: #6e4460;
+} /* plum */
+.tint-6 {
+  --tint-bg: #f0dcd6;
+  --tint-fg: #9a4a38;
+} /* rust */
+.tint-7 {
+  --tint-bg: #efe8ce;
+  --tint-fg: #7a6a22;
+} /* mustard */
+
+@media (prefers-color-scheme: dark) {
+  .tint-0 {
+    --tint-bg: #3a2a22;
+    --tint-fg: #d89a76;
+  }
+  .tint-1 {
+    --tint-bg: #362c1a;
+    --tint-fg: #d9b36a;
+  }
+  .tint-2 {
+    --tint-bg: #262b1c;
+    --tint-fg: #a8b87a;
+  }
+  .tint-3 {
+    --tint-bg: #1e2a21;
+    --tint-fg: #8fb89a;
+  }
+  .tint-4 {
+    --tint-bg: #1b2a29;
+    --tint-fg: #7fb5b1;
+  }
+  .tint-5 {
+    --tint-bg: #2a1f27;
+    --tint-fg: #c193b4;
+  }
+  .tint-6 {
+    --tint-bg: #331f1b;
+    --tint-fg: #d88f7c;
+  }
+  .tint-7 {
+    --tint-bg: #2c2a18;
+    --tint-fg: #c9bc6b;
+  }
+}
+
 /* Horizontal scrollers (mobile nav, chip rows) shouldn't show a scrollbar. */
 .no-scrollbar {
   scrollbar-width: none;
