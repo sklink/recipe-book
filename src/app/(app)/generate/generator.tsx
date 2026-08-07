@@ -6,6 +6,7 @@ import { RefreshCw, Sparkles } from "lucide-react";
 
 import { GeneratedRecipeCard } from "@/components/generated-recipe-card";
 import { useGenerateRecipe, useKeepRecipe } from "@/lib/ai/hooks";
+import { formatCost } from "@/lib/ai/format";
 import { BUCKET_DESCRIPTIONS, BUCKET_LABELS, type TimeBucket } from "@/lib/recipes/time-buckets";
 import { MEAL_LABELS } from "@/lib/recipes/meal-types";
 import type { MealType } from "@/lib/supabase/types";
@@ -152,7 +153,7 @@ export function Generator({
               ) : null}
               <p className="text-subtle text-xs">
                 Nothing is saved until you keep it. This one cost about{" "}
-                {(usage.costMillicents / 1000).toFixed(1)}¢.
+                {formatCost(usage.costMillicents)}.
               </p>
             </div>
           }

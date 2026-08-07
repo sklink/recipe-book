@@ -1,4 +1,4 @@
-import { Carrot, ChefHat, ShoppingCart, Sparkles, UtensilsCrossed } from "lucide-react";
+import { Carrot, ChefHat, Receipt, ShoppingCart, Sparkles, UtensilsCrossed } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export type NavItem = {
@@ -15,6 +15,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/generate", label: "Generate", shortLabel: "New", icon: Sparkles },
   { href: "/ingredients", label: "Ingredients", shortLabel: "Stock", icon: Carrot },
   { href: "/cart", label: "Cart", shortLabel: "Cart", icon: ShoppingCart },
+  { href: "/usage", label: "Usage", shortLabel: "Usage", icon: Receipt },
 ];
 
 /**

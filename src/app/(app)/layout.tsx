@@ -1,4 +1,5 @@
 import { IngredientSidebar } from "@/components/ingredient-sidebar";
+import { OfflineBanner } from "@/components/offline-banner";
 import { SiteNav } from "@/components/site-nav";
 import { requireUser } from "@/lib/auth/session";
 import { QueryProvider } from "@/lib/query/provider";
@@ -18,6 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <QueryProvider>
       <div className="flex min-h-dvh flex-col">
         <SiteNav />
+        <OfflineBanner />
         <div className="mx-auto flex w-full max-w-6xl flex-1">
           <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 sm:py-8">{children}</main>
           <IngredientSidebar />
