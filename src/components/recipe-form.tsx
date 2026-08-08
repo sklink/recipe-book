@@ -351,7 +351,11 @@ export function RecipeForm({
         </p>
       ) : null}
 
-      <div className="border-border bg-background sticky bottom-0 flex flex-wrap items-center gap-3 border-t py-3">
+      {/* --sheet-peek keeps this clear of the mobile ingredient sheet. */}
+      <div
+        style={{ bottom: "var(--sheet-peek)" }}
+        className="border-border bg-background sticky flex flex-wrap items-center gap-3 border-t py-3"
+      >
         <button
           type="submit"
           disabled={isSaving}

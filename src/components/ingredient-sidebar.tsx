@@ -101,6 +101,8 @@ function MobileSheet() {
       role="region"
       aria-label="Ingredients"
       data-snap={snap}
+      // Read by globals.css to set --sheet-peek, so sticky footers clear it.
+      data-ingredient-sheet=""
       className="border-border bg-surface fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-2xl border-t shadow-[0_-4px_24px_rgba(0,0,0,0.08)] lg:hidden"
       style={{
         height: heights[snap],

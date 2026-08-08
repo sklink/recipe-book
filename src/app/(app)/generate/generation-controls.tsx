@@ -1,13 +1,15 @@
 "use client";
 
-import { Check, PackageOpen, RotateCcw } from "lucide-react";
+import { Check, PackageOpen } from "lucide-react";
 
+import { iconFor } from "@/app/(app)/generate/option-icons";
 import { useIngredients } from "@/lib/ingredients/hooks";
 import {
   ANY,
   OPTION_SETS,
   type GenerationOptions,
-  type OptionSetEntry,
+  type Option,
+  type OptionSetKey,
 } from "@/lib/ai/generation-options";
 import { MEAL_LABELS, MEAL_TYPES } from "@/lib/recipes/meal-types";
 import { BUCKET_DESCRIPTIONS, BUCKET_LABELS, TIME_BUCKETS } from "@/lib/recipes/time-buckets";
@@ -19,83 +21,106 @@ export type Controls = GenerationOptions & {
   timeBucket?: TimeBucket;
 };
 
-const PRIMARY = OPTION_SETS.filter((s) => s.group === "primary");
-const MORE = OPTION_SETS.filter((s) => s.group === "more");
+/**
+ * Chips rather than selects.
+ *
+ * A select hides its options until you open it, which is exactly wrong here —
+ * the whole point of this page is to see what you could ask for. It's a much
+ * taller page in exchange, so the Generate button sticks to the bottom of the
+ * viewport instead of sitting at the end of it.
+ */
+function Chip({
+  option,
+  active,
+  onClick,
+  Icon,
+}: {
+  option: Option;
+  active: boolean;
+  onClick: () => void;
+  Icon?: ReturnType<typeof iconFor>;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      title={option.hint}
+      onClick={onClick}
+      className={`min-h-tap flex items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors ${
+        active
+          ? "border-accent/40 bg-accent-muted text-accent"
+          : "border-border-strong text-muted hover:bg-surface-muted"
+      }`}
+    >
+      {Icon ? <Icon size={14} strokeWidth={2} aria-hidden /> : null}
+      {option.label}
+    </button>
+  );
+}
 
-const gridClass = "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3";
-
-const selectClass =
-  "border-border bg-surface min-h-tap w-full rounded-lg border px-3 text-sm appearance-none";
-
-function Field({
+function ChipGroup({
+  name,
   label,
+  options,
   value,
   onChange,
-  children,
 }: {
+  name: OptionSetKey | "meal" | "time";
   label: string;
+  options: Option[];
   value: string;
   onChange: (value: string) => void;
-  children: React.ReactNode;
 }) {
-  const id = `gen-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-muted text-xs font-medium">
-        {label}
-      </label>
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={selectClass}
-      >
-        {children}
-      </select>
+    <div className="flex flex-col gap-2">
+      <p className="text-muted text-xs font-medium">{label}</p>
+      <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <Chip
+            key={option.value}
+            option={option}
+            active={value === option.value}
+            onClick={() => onChange(option.value)}
+            Icon={iconFor(name, option.value)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-type PartProps = {
+const MEAL_OPTIONS: Option[] = [
+  { value: ANY, label: "Any" },
+  ...MEAL_TYPES.map((meal) => ({ value: meal, label: MEAL_LABELS[meal] })),
+];
+
+const TIME_OPTIONS: Option[] = [
+  { value: ANY, label: "Any" },
+  ...TIME_BUCKETS.map((bucket) => ({
+    value: bucket,
+    label: BUCKET_LABELS[bucket],
+    hint: BUCKET_DESCRIPTIONS[bucket],
+  })),
+];
+
+export function GenerationControls({
+  value,
+  onChange,
+  disabled,
+}: {
   value: Controls;
   onChange: (next: Controls) => void;
   disabled?: boolean;
-};
-
-function fieldsFor({ value, onChange }: Pick<PartProps, "value" | "onChange">) {
-  const set = (patch: Partial<Controls>) => onChange({ ...value, ...patch });
-  const field = (entry: OptionSetEntry) => (
-    <Field
-      key={entry.key}
-      label={entry.label}
-      value={value[entry.key] ?? ANY}
-      onChange={(v) => set({ [entry.key]: v } as Partial<Controls>)}
-    >
-      {entry.options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </Field>
-  );
-  return { set, field };
-}
-
-/**
- * The parameters you'll reach for most, above the Generate button.
- *
- * Native selects rather than custom dropdowns: on a phone they open the OS
- * picker, which is faster to use one-handed than anything rebuilt in the page,
- * and they're keyboard- and screen-reader-correct for free.
- */
-export function GenerationControls({ value, onChange, disabled }: PartProps) {
+}) {
   const { data } = useIngredients();
   const ingredients = data?.ingredients ?? [];
   const usable = ingredients.filter((i) => i.inStock || i.isStaple).length;
-  const { set, field } = fieldsFor({ value, onChange });
+
+  const set = (patch: Partial<Controls>) => onChange({ ...value, ...patch });
 
   return (
-    <fieldset disabled={disabled} className="flex flex-col gap-5">
+    <fieldset disabled={disabled} className="flex flex-col gap-6">
       <legend className="sr-only">Recipe parameters</legend>
 
       {/*
@@ -141,75 +166,32 @@ export function GenerationControls({ value, onChange, disabled }: PartProps) {
         </p>
       </div>
 
-      <div className={gridClass}>
-        <Field
-          label="Meal"
-          value={value.mealType ?? ANY}
-          onChange={(v) => set({ mealType: v === ANY ? undefined : (v as MealType) })}
-        >
-          <option value={ANY}>Any</option>
-          {MEAL_TYPES.map((meal) => (
-            <option key={meal} value={meal}>
-              {MEAL_LABELS[meal]}
-            </option>
-          ))}
-        </Field>
+      <ChipGroup
+        name="meal"
+        label="Meal"
+        options={MEAL_OPTIONS}
+        value={value.mealType ?? ANY}
+        onChange={(v) => set({ mealType: v === ANY ? undefined : (v as MealType) })}
+      />
 
-        <Field
-          label="Time"
-          value={value.timeBucket ?? ANY}
-          onChange={(v) => set({ timeBucket: v === ANY ? undefined : (v as TimeBucket) })}
-        >
-          <option value={ANY}>Any</option>
-          {TIME_BUCKETS.map((bucket) => (
-            <option key={bucket} value={bucket}>
-              {BUCKET_LABELS[bucket]} — {BUCKET_DESCRIPTIONS[bucket].toLowerCase()}
-            </option>
-          ))}
-        </Field>
+      <ChipGroup
+        name="time"
+        label="Time"
+        options={TIME_OPTIONS}
+        value={value.timeBucket ?? ANY}
+        onChange={(v) => set({ timeBucket: v === ANY ? undefined : (v as TimeBucket) })}
+      />
 
-        {PRIMARY.map(field)}
-      </div>
-    </fieldset>
-  );
-}
-
-/**
- * The rest, below the Generate button.
- *
- * Not hidden — just out of the way. Nine stacked selects would put the button
- * a long scroll down a phone screen, and these are the three you'd usually
- * leave alone. Below the fold in the ordinary sense, still one tap away.
- */
-export function SecondaryControls({
-  value,
-  onChange,
-  onReset,
-  disabled,
-}: PartProps & { onReset: () => void }) {
-  const { field } = fieldsFor({ value, onChange });
-
-  const chosen = [value.mealType, value.timeBucket, ...OPTION_SETS.map((s) => value[s.key])].filter(
-    (v) => v && v !== ANY,
-  ).length;
-
-  return (
-    <fieldset disabled={disabled} className="flex flex-col gap-3">
-      {/* A legend sits outside the fieldset's flex flow, so its gap is its own. */}
-      <legend className="text-muted mb-3 text-xs font-medium">Finer detail</legend>
-
-      <div className={gridClass}>{MORE.map(field)}</div>
-
-      {chosen > 0 ? (
-        <button
-          type="button"
-          onClick={onReset}
-          className="text-muted hover:text-foreground min-h-tap flex w-fit items-center gap-2 text-xs"
-        >
-          <RotateCcw size={13} strokeWidth={2} aria-hidden />
-          Reset {chosen} choice{chosen === 1 ? "" : "s"}
-        </button>
-      ) : null}
+      {OPTION_SETS.map((entry) => (
+        <ChipGroup
+          key={entry.key}
+          name={entry.key}
+          label={entry.label}
+          options={entry.options}
+          value={value[entry.key] ?? ANY}
+          onChange={(v) => set({ [entry.key]: v } as Partial<Controls>)}
+        />
+      ))}
     </fieldset>
   );
 }

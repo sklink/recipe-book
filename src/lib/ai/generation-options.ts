@@ -3,15 +3,24 @@
  *
  * Every axis leads with "any", which is both the default and a real instruction:
  * an unset axis is left to the model rather than silently constrained. Values
- * are lowercase keys; labels are what the UI shows and what the prompt says, so
- * adding an option is a one-line change here.
+ * are lowercase keys; labels are what the chip shows and what the summary line
+ * says, so adding an option is a one-line change here.
+ *
+ * Labels are short because they sit inside chips — anything longer than two
+ * words wraps and breaks the row. Where a label needs qualifying, `hint` does
+ * it on hover rather than making every chip wider.
+ *
+ * Pure data on purpose: this is imported by the server route and the prompt
+ * builder, so it must not pull React or icons in with it. Icons live in
+ * `src/app/(app)/generate/option-icons.ts`.
  */
 
-export type OptionSet = { value: string; label: string }[];
+export type Option = { value: string; label: string; hint?: string };
+export type OptionSet = Option[];
 
 export const ANY = "any";
 
-const any = (label = "Any"): { value: string; label: string } => ({ value: ANY, label });
+const any = (hint?: string): Option => ({ value: ANY, label: "Any", hint });
 
 export const CUISINES: OptionSet = [
   any(),
@@ -40,13 +49,13 @@ export const BASES: OptionSet = [
   { value: "pasta", label: "Pasta" },
   { value: "noodles", label: "Noodles" },
   { value: "potato", label: "Potato" },
-  { value: "bread", label: "Bread or flatbread" },
-  { value: "grains", label: "Grains (couscous, bulgur, farro)" },
-  { value: "pulses", label: "Beans or lentils" },
-  { value: "tortilla", label: "Tortilla or wrap" },
-  { value: "pastry", label: "Pastry or dough" },
+  { value: "bread", label: "Bread", hint: "Bread or flatbread" },
+  { value: "grains", label: "Grains", hint: "Couscous, bulgur, farro" },
+  { value: "pulses", label: "Beans", hint: "Beans or lentils" },
+  { value: "tortilla", label: "Tortilla", hint: "Tortilla or wrap" },
+  { value: "pastry", label: "Pastry", hint: "Pastry or dough" },
   { value: "eggs", label: "Eggs" },
-  { value: "none", label: "No starch — protein and veg" },
+  { value: "none", label: "No starch", hint: "Protein and veg only" },
 ];
 
 export const PROTEINS: OptionSet = [
@@ -58,22 +67,22 @@ export const PROTEINS: OptionSet = [
   { value: "fish", label: "Fish" },
   { value: "shellfish", label: "Shellfish" },
   { value: "eggs", label: "Eggs" },
-  { value: "tofu", label: "Tofu or tempeh" },
-  { value: "pulses", label: "Beans or lentils" },
+  { value: "tofu", label: "Tofu", hint: "Tofu or tempeh" },
+  { value: "pulses", label: "Beans", hint: "Beans or lentils" },
   { value: "cheese", label: "Cheese" },
-  { value: "none", label: "No main protein" },
+  { value: "none", label: "No protein", hint: "No main protein" },
 ];
 
 /** What you'd put next to it — shapes the recipe without becoming the recipe. */
 export const SIDES: OptionSet = [
-  any("Any / nothing in particular"),
-  { value: "salad", label: "A salad" },
-  { value: "veg-side", label: "A vegetable side" },
+  any("Nothing in particular"),
+  { value: "salad", label: "Salad" },
+  { value: "veg-side", label: "Veg side" },
   { value: "bread", label: "Bread" },
   { value: "rice", label: "Rice" },
   { value: "potatoes", label: "Potatoes" },
-  { value: "pickles", label: "Pickles or something sharp" },
-  { value: "standalone", label: "Nothing — it should stand alone" },
+  { value: "pickles", label: "Pickles", hint: "Pickles or something sharp" },
+  { value: "standalone", label: "Stands alone", hint: "It shouldn't need a side" },
 ];
 
 /**
@@ -81,7 +90,7 @@ export const SIDES: OptionSet = [
  * that way in the prompt — a "mostly vegetarian" recipe is a failed one.
  */
 export const DIETS: OptionSet = [
-  any("Any"),
+  any(),
   { value: "vegetarian", label: "Vegetarian" },
   { value: "vegan", label: "Vegan" },
   { value: "pescatarian", label: "Pescatarian" },
@@ -96,22 +105,22 @@ export const DIETS: OptionSet = [
  */
 export const METHODS: OptionSet = [
   any(),
-  { value: "one-pan", label: "One pan or tray" },
+  { value: "one-pan", label: "One pan", hint: "One pan or tray" },
   { value: "no-cook", label: "No cooking" },
-  { value: "stovetop", label: "Stovetop only" },
-  { value: "oven", label: "Mostly oven" },
-  { value: "grill", label: "Grill or barbecue" },
-  { value: "slow", label: "Slow, mostly unattended" },
-  { value: "batch", label: "Batch cook / leftovers" },
+  { value: "stovetop", label: "Stovetop" },
+  { value: "oven", label: "Oven", hint: "Mostly oven" },
+  { value: "grill", label: "Grill", hint: "Grill or barbecue" },
+  { value: "slow", label: "Slow", hint: "Slow and mostly unattended" },
+  { value: "batch", label: "Batch", hint: "Batch cook for leftovers" },
 ];
 
 /** Where the effort should go — the "learn something" axis from the brief. */
 export const AMBITIONS: OptionSet = [
-  any("Any"),
-  { value: "simple", label: "Straightforward — no new skills" },
-  { value: "technique", label: "Teach me a technique" },
-  { value: "impressive", label: "Something worth serving to guests" },
-  { value: "frugal", label: "Cheap ingredients" },
+  any(),
+  { value: "simple", label: "Straightforward", hint: "No new skills" },
+  { value: "technique", label: "Technique", hint: "Teach me something" },
+  { value: "impressive", label: "Impressive", hint: "Worth serving to guests" },
+  { value: "frugal", label: "Frugal", hint: "Cheap ingredients" },
 ];
 
 export type GenerationOptions = {
@@ -126,26 +135,23 @@ export type GenerationOptions = {
   useAvailable?: boolean;
 };
 
-/**
- * `group` decides what's on screen without asking. Nine stacked selects is a
- * long scroll on a phone before you reach the button, and the second group is
- * the one you rarely touch — so it starts folded away.
- */
+export type OptionSetKey = keyof Omit<GenerationOptions, "useAvailable">;
+
 export type OptionSetEntry = {
-  key: keyof Omit<GenerationOptions, "useAvailable">;
+  key: OptionSetKey;
   label: string;
   options: OptionSet;
-  group: "primary" | "more";
 };
 
+/** Render order on the page: broadest strokes first, seasoning last. */
 export const OPTION_SETS: OptionSetEntry[] = [
-  { key: "cuisine", label: "Cuisine", options: CUISINES, group: "primary" },
-  { key: "base", label: "Base", options: BASES, group: "primary" },
-  { key: "protein", label: "Protein", options: PROTEINS, group: "primary" },
-  { key: "side", label: "Goes with", options: SIDES, group: "primary" },
-  { key: "diet", label: "Diet", options: DIETS, group: "more" },
-  { key: "method", label: "Method", options: METHODS, group: "more" },
-  { key: "ambition", label: "Ambition", options: AMBITIONS, group: "more" },
+  { key: "cuisine", label: "Cuisine", options: CUISINES },
+  { key: "base", label: "Base", options: BASES },
+  { key: "protein", label: "Protein", options: PROTEINS },
+  { key: "side", label: "Goes with", options: SIDES },
+  { key: "diet", label: "Diet", options: DIETS },
+  { key: "method", label: "Method", options: METHODS },
+  { key: "ambition", label: "Ambition", options: AMBITIONS },
 ];
 
 /** "any" and unset mean the same thing; normalise so callers only handle one. */

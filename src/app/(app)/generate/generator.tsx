@@ -2,13 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { RefreshCw, Sparkles } from "lucide-react";
+import { RefreshCw, RotateCcw, Sparkles } from "lucide-react";
 
-import {
-  GenerationControls,
-  SecondaryControls,
-  type Controls,
-} from "@/app/(app)/generate/generation-controls";
+import { GenerationControls, type Controls } from "@/app/(app)/generate/generation-controls";
 import { GeneratedRecipeCard } from "@/components/generated-recipe-card";
 import { useGenerateRecipe, useKeepRecipe } from "@/lib/ai/hooks";
 import { formatCost } from "@/lib/ai/format";
@@ -119,6 +115,8 @@ export function Generator({
   }
 
   const summary = describe(usedControls);
+  // What's selected right now, which is not the same thing while you retune.
+  const chosen = describe(controls);
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,7 +126,22 @@ export function Generator({
         disabled={generate.isPending || keep.isPending}
       />
 
-      <div className="border-border flex flex-wrap items-center gap-3 border-t pt-5">
+      {/*
+       * Sticky rather than placed: chips make this page around three screens
+       * tall, so any fixed position for the button is the wrong one for
+       * somebody. Pinned to the bottom edge it's in reach from everywhere, and
+       * it carries the running summary so you can see what you've picked
+       * without scrolling back up.
+       *
+       * --sheet-peek clears the mobile ingredient sheet, which is fixed above
+       * this in the stack. It's 0 whenever the sheet isn't showing, so this
+       * doesn't reserve space for something that isn't there.
+       */}
+      <div
+        data-testid="generate-actions"
+        style={{ bottom: "var(--sheet-peek)" }}
+        className="border-border bg-background/95 sticky z-30 -mx-4 flex flex-wrap items-center gap-3 border-t px-4 py-3 backdrop-blur-sm sm:-mx-6 sm:px-6"
+      >
         <button
           type="button"
           onClick={() => run()}
@@ -158,14 +171,23 @@ export function Generator({
             Something different
           </button>
         ) : null}
-      </div>
 
-      <SecondaryControls
-        value={controls}
-        onChange={setControls}
-        onReset={reset}
-        disabled={generate.isPending || keep.isPending}
-      />
+        <p className="text-subtle min-w-0 flex-1 truncate text-xs" data-testid="generate-choices">
+          {chosen.length > 0 ? chosen.join(" · ") : "Anything at all"}
+        </p>
+
+        {chosen.length > 0 ? (
+          <button
+            type="button"
+            onClick={reset}
+            disabled={generate.isPending}
+            className="text-muted hover:text-foreground min-h-tap flex shrink-0 items-center gap-1.5 text-xs"
+          >
+            <RotateCcw size={13} strokeWidth={2} aria-hidden />
+            Reset
+          </button>
+        ) : null}
+      </div>
 
       {generate.isPending ? (
         <div className="flex flex-col gap-2">

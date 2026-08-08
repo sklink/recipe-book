@@ -19,6 +19,13 @@ const check = (d, ok, extra = "") => {
   console.log(`  ${ok ? "✓" : "✗"} ${d}${extra ? `  ${extra}` : ""}`);
 };
 
+const chip = (group, label) =>
+  page.locator(`[role="radiogroup"][aria-label="${group}"] [role="radio"]`, { hasText: label });
+const chosen = (group) =>
+  page
+    .locator(`[role="radiogroup"][aria-label="${group}"] [role="radio"][aria-checked="true"]`)
+    .textContent();
+
 await page.goto(`http://localhost:3000/auth/callback?token_hash=${token}&type=magiclink`, {
   waitUntil: "networkidle",
 });
@@ -27,29 +34,10 @@ if (page.url().includes("/login")) {
   process.exit(2);
 }
 
-// --- controls render, unseeded
+// --- every group is a chip group, unseeded
 await page.goto("http://localhost:3000/generate", { waitUntil: "networkidle" });
-const selects = page.locator("fieldset select");
-check("nine selects render", (await selects.count()) === 9, `got ${await selects.count()}`);
 
-// The whole point of the split: the button sits above the finer detail, so it
-// isn't stranded below nine stacked selects on a phone.
-const order = await page.evaluate(() => {
-  const button = [...document.querySelectorAll("button")].find((b) =>
-    b.textContent.includes("Generate a recipe"),
-  );
-  const diet = document.querySelector("#gen-diet");
-  const protein = document.querySelector("#gen-protein");
-  return {
-    afterProtein: protein.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING,
-    beforeDiet: diet.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_PRECEDING,
-  };
-});
-check("Generate sits below the main parameters", Boolean(order.afterProtein));
-check("Generate sits above the finer detail", Boolean(order.beforeDiet));
-
-const labels = await page.locator("fieldset label").allTextContents();
-for (const expected of [
+const GROUPS = [
   "Meal",
   "Time",
   "Cuisine",
@@ -59,36 +47,114 @@ for (const expected of [
   "Diet",
   "Method",
   "Ambition",
-]) {
-  check(`"${expected}" is offered`, labels.includes(expected));
-}
+];
+const groupNames = await page
+  .locator("fieldset [role=radiogroup]")
+  .evaluateAll((els) => els.map((el) => el.getAttribute("aria-label")));
+for (const group of GROUPS) check(`"${group}" is a chip group`, groupNames.includes(group));
 
-const allLeadWithAny = await selects.evaluateAll((els) =>
-  els.every((el) => el.options[0].value === "any" && el.value === "any"),
+check("no dropdowns left", (await page.locator("fieldset select").count()) === 0);
+
+const chips = page.locator("fieldset [role=radiogroup] [role=radio]");
+console.log(`  ${await chips.count()} chips total`);
+
+// Every group leads with Any, and Any is what's selected before you touch it.
+const leads = await page.locator("fieldset [role=radiogroup]").evaluateAll((els) =>
+  els
+    .filter((el) => el.getAttribute("aria-label") !== "Use only ingredients in stock")
+    .map((el) => {
+      const first = el.querySelector('[role="radio"]');
+      const on = el.querySelector('[role="radio"][aria-checked="true"]');
+      return {
+        group: el.getAttribute("aria-label"),
+        leadsWithAny: first.textContent.trim() === "Any",
+        anySelected: on === first,
+      };
+    }),
 );
-check("every axis leads with Any and defaults to it", allLeadWithAny);
+check(
+  "every group leads with Any",
+  leads.every((g) => g.leadsWithAny),
+  leads
+    .filter((g) => !g.leadsWithAny)
+    .map((g) => g.group)
+    .join(", "),
+);
+check(
+  "Any is selected until you choose",
+  leads.every((g) => g.anySelected),
+  leads
+    .filter((g) => !g.anySelected)
+    .map((g) => g.group)
+    .join(", "),
+);
+
+// Icons: present where they mean something, absent where they'd be decoration.
+const icons = await page.evaluate(() => {
+  const out = {};
+  for (const g of document.querySelectorAll("fieldset [role=radiogroup]")) {
+    const name = g.getAttribute("aria-label");
+    const radios = [...g.querySelectorAll('[role="radio"]')];
+    out[name] = radios.filter((r) => r.querySelector("svg")).length / radios.length;
+  }
+  return out;
+});
+for (const group of GROUPS.filter((g) => g !== "Cuisine")) {
+  check(
+    `${group} chips all carry an icon`,
+    icons[group] === 1,
+    `${Math.round(icons[group] * 100)}%`,
+  );
+}
+check("Cuisine is text-only", icons.Cuisine === 0, `${Math.round(icons.Cuisine * 100)}%`);
 
 check(
-  "stock question defaults to No",
-  (await page.locator('[role="radio"][aria-checked="true"]').textContent()) === "No",
+  "no reset until something is chosen",
+  (await page.getByRole("button", { name: "Reset" }).count()) === 0,
 );
-check("no reset button while nothing is chosen", (await page.getByText(/^Reset /).count()) === 0);
-await page.waitForTimeout(300); // let colour transitions settle before shooting
+check(
+  "the bar says nothing is chosen",
+  (await page.getByTestId("generate-choices").textContent()) === "Anything at all",
+);
+await page.waitForTimeout(300);
 await page.screenshot({ path: "/tmp/shot-gen-blank.png", fullPage: true });
+
+// --- the Generate button is reachable without scrolling, from the top and the bottom
+for (const where of ["top", "bottom"]) {
+  await page.evaluate(
+    (w) => window.scrollTo(0, w === "top" ? 0 : document.body.scrollHeight),
+    where,
+  );
+  await page.waitForTimeout(350);
+  const visible = await page.evaluate(() => {
+    const bar = document.querySelector('[data-testid="generate-actions"]');
+    const box = bar.getBoundingClientRect();
+    return box.bottom <= window.innerHeight + 1 && box.top >= 0;
+  });
+  check(`Generate is on screen at the ${where} of the page`, visible);
+}
+await page.evaluate(() => window.scrollTo(0, 0));
 
 // --- the flow still seeds meal and time
 await page.goto("http://localhost:3000/generate?mealType=lunch&timeBucket=quick", {
   waitUntil: "networkidle",
 });
-check("flow seeds Meal", (await page.locator("#gen-meal").inputValue()) === "lunch");
-check("flow seeds Time", (await page.locator("#gen-time").inputValue()) === "quick");
-check("seeded choices are counted", (await page.getByText("Reset 2 choices").count()) === 1);
+check("flow seeds Meal", (await chosen("Meal")) === "Lunch");
+check("flow seeds Time", (await chosen("Time")) === "Quick");
+check(
+  "the bar reflects the seed",
+  (await page.getByTestId("generate-choices").textContent()) === "Lunch · Quick",
+);
 
-// --- choices are editable and resettable
-await page.locator("#gen-cuisine").selectOption("thai");
-await page.locator("#gen-protein").selectOption("tofu");
-check("choices accumulate", (await page.getByText("Reset 4 choices").count()) === 1);
-await page.locator('[role="radio"]:has-text("Yes")').click();
+// --- chips are selectable and resettable
+await chip("Cuisine", "Thai").click();
+await chip("Protein", "Tofu").click();
+check("selection lands on the chip", (await chosen("Cuisine")) === "Thai");
+check(
+  "the bar tracks every choice",
+  (await page.getByTestId("generate-choices").textContent()) === "Lunch · Quick · Thai · Tofu",
+);
+await page.locator('[role="radio"]:has-text("Yes")').first().click();
 check(
   "stock answer explains itself",
   (await page.textContent("body")).includes("ingredients you have in stock"),
@@ -96,20 +162,24 @@ check(
 await page.waitForTimeout(300);
 await page.screenshot({ path: "/tmp/shot-gen-filled.png", fullPage: true });
 
-await page.getByText("Reset 4 choices").click();
-check("reset clears the axes", (await page.locator("#gen-cuisine").inputValue()) === "any");
+await page.getByRole("button", { name: "Reset" }).click();
+check("reset returns every group to Any", (await chosen("Cuisine")) === "Any");
 check(
   "reset keeps the stock answer",
-  (await page.locator('[role="radio"][aria-checked="true"]').textContent()) === "Yes",
+  (await page
+    .locator(
+      '[role="radiogroup"][aria-label="Use only ingredients in stock"] [aria-checked="true"]',
+    )
+    .textContent()) === "Yes",
 );
 
 // --- one real generation, constrained
-await page.locator('[role="radio"]:has-text("No")').click();
-await page.locator("#gen-cuisine").selectOption("japanese");
-await page.locator("#gen-base").selectOption("rice");
-await page.locator("#gen-protein").selectOption("none");
-await page.locator("#gen-meal").selectOption("dinner");
-await page.locator("#gen-diet").selectOption("vegan");
+await page.locator('[role="radio"]:has-text("No")').first().click();
+await chip("Cuisine", "Japanese").click();
+await chip("Base", "Rice").click();
+await chip("Protein", "No protein").click();
+await chip("Meal", "Dinner").click();
+await chip("Diet", "Vegan").click();
 
 const request = page.waitForRequest((r) => r.url().includes("/api/generate"));
 await page.getByRole("button", { name: "Generate a recipe" }).click();
@@ -123,10 +193,7 @@ check(
     body.mealType === "dinner",
   JSON.stringify(body.options),
 );
-check(
-  "both control groups disable while thinking",
-  (await page.locator("fieldset[disabled]").count()) === 2,
-);
+check("the chips disable while thinking", (await page.locator("fieldset[disabled]").count()) === 1);
 
 await page.getByRole("button", { name: "Keep" }).waitFor({ timeout: 180_000 });
 const summary = await page.getByTestId("generate-summary").textContent();
@@ -135,9 +202,7 @@ check(
   summary.includes("Japanese") && summary.includes("Vegan") && summary.includes("Dinner"),
   summary,
 );
-const card = await page.locator("article, [data-testid=generated-card]").first().textContent();
 console.log(`\n  generated: ${(await page.locator("h2, h3").first().textContent()).trim()}`);
-check("the recipe is on screen with ingredients", card.length > 200);
 check(
   "try again is offered",
   (await page.getByRole("button", { name: "Try again" }).count()) === 1,
@@ -151,10 +216,31 @@ const overflow = await page.evaluate(
   () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
 );
 check("no horizontal overflow at 375px", overflow <= 0, `${overflow}px`);
-const tooShort = await page
-  .locator("fieldset select, fieldset [role=radio]")
-  .evaluateAll((els) => els.filter((el) => el.getBoundingClientRect().height < 44).length);
-check("every control meets the 44px tap target", tooShort === 0, `${tooShort} too short`);
+
+const tooShort = await chips.evaluateAll(
+  (els) => els.filter((el) => el.getBoundingClientRect().height < 44).length,
+);
+check("every chip meets the 44px tap target", tooShort === 0, `${tooShort} too short`);
+
+// The bar must clear the sheet when it's there, and not reserve space when it
+// isn't — a gap under the button reads as a layout bug.
+const bottomEdge = await page.evaluate(() => {
+  const bar = document.querySelector('[data-testid="generate-actions"]').getBoundingClientRect();
+  const sheet = document.querySelector("[data-ingredient-sheet]");
+  return {
+    sheetPresent: Boolean(sheet),
+    gap: Math.round(window.innerHeight - bar.bottom),
+    clearsSheet: sheet ? bar.bottom <= sheet.getBoundingClientRect().top + 1 : true,
+  };
+});
+check("the action bar clears the ingredient sheet", bottomEdge.clearsSheet);
+check(
+  bottomEdge.sheetPresent
+    ? "the bar sits exactly on the sheet, no dead space"
+    : "no sheet, so the bar sits on the bottom edge",
+  bottomEdge.sheetPresent ? bottomEdge.gap === 52 : bottomEdge.gap === 0,
+  `${bottomEdge.gap}px below the bar`,
+);
 await page.screenshot({ path: "/tmp/shot-gen-mobile.png", fullPage: true });
 
 check("no 5xx responses", server5xx.length === 0, server5xx.join(", "));

@@ -101,6 +101,29 @@ for (const width of [1440, 768, 375]) {
     `name ${Math.round(row.name)}`,
   );
 
+  // The save bar sticks to the bottom edge, where the mobile ingredient sheet
+  // is fixed over it. It must clear the sheet without reserving space when the
+  // sheet isn't there.
+  const bar = await page.evaluate(() => {
+    const el = [...document.querySelectorAll("form > div")].find((d) =>
+      getComputedStyle(d).position.includes("sticky"),
+    );
+    if (!el) return null;
+    const box = el.getBoundingClientRect();
+    const sheet = document.querySelector("[data-ingredient-sheet]");
+    return {
+      sheetPresent: Boolean(sheet),
+      gap: Math.round(window.innerHeight - box.bottom),
+      clearsSheet: sheet ? box.bottom <= sheet.getBoundingClientRect().top + 1 : true,
+    };
+  });
+  check("the save bar clears the ingredient sheet", bar !== null && bar.clearsSheet);
+  check(
+    "the save bar reserves no space it doesn't need",
+    bar !== null && bar.gap === (bar.sheetPresent ? 52 : 0),
+    `sheet ${bar?.sheetPresent ? "shown" : "absent"}, ${bar?.gap}px below`,
+  );
+
   await page.screenshot({ path: `/tmp/shot-form-${width}.png`, fullPage: true });
 }
 

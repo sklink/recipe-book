@@ -44,6 +44,26 @@
   --nav-height: 3.5rem;
   --sidebar-width: 20rem;
   --tap-target: 2.75rem; /* 44px minimum */
+
+  /*
+   * How much the mobile ingredient sheet is covering at the bottom edge.
+   * Anything that sticks to that edge should offset by this rather than
+   * hard-coding the sheet's height — the sheet only renders when it has
+   * ingredients to show, and reserving space for an absent sheet reads as
+   * a layout bug. Set below; 0 is the correct default.
+   */
+  --sheet-peek: 0px;
+}
+
+/*
+ * The sheet is fixed, lg:hidden, and peeks at 3.25rem. :has() lets the page
+ * respond to it appearing and disappearing without either component knowing
+ * about the other.
+ */
+@media (width < 64rem) {
+  body:has([data-ingredient-sheet]) {
+    --sheet-peek: 3.25rem;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
